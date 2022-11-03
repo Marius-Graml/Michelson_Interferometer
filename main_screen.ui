@@ -2,24 +2,36 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
-    <height>603</height>
+    <width>809</width>
+    <height>579</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
    <widget class="QWidget" name="main_widget" native="true">
     <property name="geometry">
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>801</width>
+      <width>851</width>
       <height>601</height>
      </rect>
     </property>
@@ -28,79 +40,11 @@
 background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 rgba(255, 255, 255, 255), stop:0.1 rgba(255, 255, 255, 255), stop:0.2 rgba(255, 176, 176, 167), stop:0.3 rgba(255, 151, 151, 92), stop:0.4 rgba(255, 125, 125, 51), stop:0.5 rgba(255, 76, 76, 205), stop:0.52 rgba(255, 76, 76, 205), stop:0.6 rgba(255, 180, 180, 84), stop:1 rgba(255, 255, 255, 0));
 };</string>
     </property>
-    <widget class="QPushButton" name="filter_button">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>350</y>
-       <width>121</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(0,0,0);
-background-color: rgb(200, 200, 200);</string>
-     </property>
-     <property name="text">
-      <string>FIR-Filter</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="osc_button">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>230</y>
-       <width>121</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(0,0,0);
-background-color: rgb(200, 200, 200);</string>
-     </property>
-     <property name="text">
-      <string>Oscilloscope</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="controller_button">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>410</y>
-       <width>121</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(0,0,0);
-background-color: rgb(200, 200, 200);</string>
-     </property>
-     <property name="text">
-      <string>PID Controller</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="monitor_button">
-     <property name="geometry">
-      <rect>
-       <x>340</x>
-       <y>470</y>
-       <width>121</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(0,0,0);
-background-color: rgb(200, 200, 200);</string>
-     </property>
-     <property name="text">
-      <string>Monitor</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="label">
      <property name="geometry">
       <rect>
-       <x>200</x>
-       <y>120</y>
+       <x>220</x>
+       <y>100</y>
        <width>431</width>
        <height>131</height>
       </rect>
@@ -112,22 +56,61 @@ background-color: rgb(200, 200, 200);</string>
       <string>Michelson Interferometer</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="demod_button">
+    <widget class="QWidget" name="">
      <property name="geometry">
       <rect>
-       <x>340</x>
-       <y>290</y>
-       <width>121</width>
-       <height>51</height>
+       <x>350</x>
+       <y>220</y>
+       <width>151</width>
+       <height>241</height>
       </rect>
      </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(0,0,0);
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QPushButton" name="osc_button">
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0,0,0);
 background-color: rgb(200, 200, 200);</string>
-     </property>
-     <property name="text">
-      <string>Demodulation</string>
-     </property>
+        </property>
+        <property name="text">
+         <string>Oscilloscope</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="filter_button">
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0,0,0);
+background-color: rgb(200, 200, 200);</string>
+        </property>
+        <property name="text">
+         <string>FIR-Filter</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="controller_button">
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0,0,0);
+background-color: rgb(200, 200, 200);</string>
+        </property>
+        <property name="text">
+         <string>PID Controller</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="monitor_button">
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0,0,0);
+background-color: rgb(200, 200, 200);</string>
+        </property>
+        <property name="text">
+         <string>Monitor</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </widget>
   </widget>
@@ -135,7 +118,6 @@ background-color: rgb(200, 200, 200);</string>
  </widget>
  <tabstops>
   <tabstop>osc_button</tabstop>
-  <tabstop>demod_button</tabstop>
   <tabstop>filter_button</tabstop>
   <tabstop>controller_button</tabstop>
   <tabstop>monitor_button</tabstop>

@@ -1,42 +1,30 @@
 
 import sys
 from PyQt5.uic import loadUi
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from simple_pid import PID
-from moku.instruments import Oscilloscope
 from monitor_screen import Ui_Plot_window
 from scipy import signal
 import numpy as np
 import pyqtgraph as pg
+from osc_class import osc
+from low_pass_filter_class import low_pass_filter
+from pid_controller_class import pid_controller
 
 class globalData():
-    def __init__(self, osc_moku=None, input_ch_number=None, timebase=None, dith_freq=None, theta=None, num_coeff=None, cutoff=None, Kp=None, Ki=None, Kd=None, pid=None, max_ripple=None, min_attenuation=None, filtertype=None, fs=8928571.42857143):
-        self.osc_moku = osc_moku
-        self.input_ch_number = input_ch_number
-        self.timebase = timebase
-        self.dith_freq = dith_freq
-        self.theta = theta
-        self.num_coeff = num_coeff
-        self.cutoff = cutoff
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.pid = pid
-        self.max_ripple = max_ripple
-        self.min_attenuation = min_attenuation
-        self.filtertype = filtertype
-        self.fs = fs
-class main_screen(QMainWindow):
-    def __init__(self, osc=None, demodulation=None, filter=None, controller=None):
+    def __init__(self, osc=None, filter=None, pid=None):
         self.osc = osc
-        self.demodulation = demodulation
+        self.filter = filter
+        self.pid = pid
+
+class main_screen(QMainWindow):
+    def __init__(self, osc=None, filter=None, controller=None):
+        self.osc = osc
         self.filter = filter
         self.controller = controller
         super(main_screen, self).__init__()
         loadUi('main_screen.ui', self)
         self.osc_button.clicked.connect(self.toosc)
-        self.demod_button.clicked.connect(self.todemod)
         self.filter_button.clicked.connect(self.tofilter)
         self.controller_button.clicked.connect(self.tocontroller)
         self.monitor_button.clicked.connect(self.tomonitor)
@@ -46,20 +34,15 @@ class main_screen(QMainWindow):
         widget.addWidget(self.osc)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
-    def todemod(self):
-        self.demodulation = demod_screen()
-        widget.addWidget(self.demodulation)
-        widget.setCurrentIndex(widget.currentIndex()+2)
-
     def tofilter(self):
         self.filter = low_pass_filter_screen()
         widget.addWidget(self.filter)
-        widget.setCurrentIndex(widget.currentIndex()+3)
+        widget.setCurrentIndex(widget.currentIndex()+2)
 
     def tocontroller(self):
         self.controller = pid_controller_screen()
         widget.addWidget(self.controller)
-        widget.setCurrentIndex(widget.currentIndex()+4)
+        widget.setCurrentIndex(widget.currentIndex()+3)
 
     def tomonitor(self):
         self.window = QtWidgets.QMainWindow()
@@ -72,90 +55,56 @@ class osc_screen(QMainWindow):
         super(osc_screen, self).__init__()
         loadUi('osc_screen.ui', self)
         self.in_ch_line.setText('1')
+        self.out_ch_line.setText('2')
         self.timebase_line.setText('0 1e-4')
-        self.osc_running_label.setText('')
-        self.insert_button.clicked.connect(self.insert_function)
+        self.status_label.setText('')
+        self.status_label.setStyleSheet('color: red;')
+        self.run_button.clicked.connect(self.run_function)
         self.return_button.clicked.connect(self.return_function)
 
-    def osc_config(self, ip_address):
-        ## Oscilloscope config
-        osc = Oscilloscope(ip_address, force_connect = True)
-        # Trigger on input Channel 1, rising edge, 0V 
-        osc.set_trigger(type='Edge', source='Input1', level=0)
-        # View +-5usec, i.e. trigger in the centre
-        osc.set_timebase(data_collector.timebase[0], data_collector.timebase[1])
-        # Generate an output ramp wave on Channel 1, 1Vpp, 10000Hz, 0V offset
-        # osc.generate_waveform(channel=1, type='Ramp', amplitude=1, frequency=10000, duty=0.9, symmetry=0.5, edge_time=0.5)
-        osc.generate_waveform(channel=1, type='Sine', amplitude=2.5, frequency=data_collector.dith_freq, phase=0, offset=2.5)
-        # Set the data source of Channel 1 to be Input 1
-        osc.set_source(data_collector.input_ch_number, 'Output1')
-        # osc.set_source(data_collector.input_ch_number, 'Input1')
-        return osc
+    def run_function(self):
+        input_ch = self.in_ch_line.text()
+        output_ch = self.out_ch_line.text()
+        timebase = self.timebase_line.text()
+        dither_freq = self.dith_freq_line.text()
+        theta = self.phase_diff_line.text()
 
-    def insert_function(self):
-        input_ch_number_tmp = self.in_ch_line.text()
-        timebase_tmp = self.timebase_line.text()
-
-        # Cast string to int and float
-        input_ch_number_tmp = int(input_ch_number_tmp)
-        timebase_tmp = [float(x) for x in timebase_tmp.split()]
-        if timebase_tmp[0] < 0 or timebase_tmp[1] < 0:
-            self.timebase_label.setText('Negative time values not applicable.')
-        elif timebase_tmp[0] > timebase_tmp[1]:
-            self.timebase_label.setText('Starting value must be higher than end value.')
+        # Error consideration
+        if len(input_ch) == 0 or len(output_ch) == 0 or len(timebase) == 0 or len(dither_freq) == 0 or len(theta) == 0:
+            self.status_label.setText('Please insert all fields first.')
         else:
-            # Store data
-            data_collector.input_ch_number = input_ch_number_tmp
-            data_collector.timebase = timebase_tmp
-            print('Selected input channel: ' + str(data_collector.input_ch_number))
-            print('Timebase: ' + str(data_collector.timebase))
+            # Cast string to int and float
+            input_ch = int(input_ch)
+            output_ch = int(output_ch)
+            timebase = [float(x) for x in timebase.split()]
+            dith_freq = float(dither_freq)
+            theta = float(theta)
 
-            # Config oscilloscope
-            if data_collector.dith_freq == None:
-                self.osc_running_label.setStyleSheet('color: red;')
-                self.osc_running_label.setText('Please insert dither frequency first.')
+            if timebase[0] < 0 or timebase[1] < 0:
+                self.status_label.setText('Negative time values not applicable.')
+            elif timebase[0] > timebase[1]:
+                self.status_label.setText('Starting time value must be higher than end value.')
             else:
-                self.osc_running_label.setStyleSheet('color: green;')
-                self.osc_running_label.setText('Starting oscilloscope...')
+                print('Selected input channel: ' + str(input_ch))
+                print('Selected output channel: ' + str(output_ch))
+                print('Timebase: ' + str(timebase))
+                print('Dither frequency: ' + str(dither_freq))
+                print('Phase difference: ' + str(theta))
+
+                # Config oscilloscope
+                self.status_label.setStyleSheet('color: green;')
+                self.status_label.setText('')
+                self.status_label.setText('Starting oscilloscope...')
                 print('Starting oscilloscope...')
-                data_collector.osc_moku = self.osc_config('[fe80:0000:0000:0000:7269:79ff:feb9:0c22%10]')
+                data_collector.osc = osc(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0c22%10]', timebase=timebase, input_ch=input_ch, output_ch=output_ch, dith_freq=dith_freq, theta=theta)
+                data_collector.osc.config()
                 print('Oscilloscope is running.')
-                self.osc_running_label.setStyleSheet('color: green;')
-                self.osc_running_label.setText('Oscilloscope is running.')
+                self.status_label.setText('Oscilloscope is running.')
 
     def return_function(self):
         ui = main_screen()
         widget.addWidget(ui)
         widget.setCurrentIndex(widget.currentIndex()-1)
-
-class demod_screen(QMainWindow):
-    def __init__(self):
-        super(demod_screen, self).__init__()
-        loadUi('demodulation_screen.ui', self)
-        self.insert_button.clicked.connect(self.insert_function)
-        self.return_button.clicked.connect(self.return_function)
-
-    def insert_function(self):
-        demod_freq_tmp = self.dith_fre_line.text()
-        theta_tmp = self.phase_diff_line.text()
-
-        if len(demod_freq_tmp) == 0 or len(theta_tmp) == 0:
-            self.error_label.setText('Please insert all fields.')
-
-        else:
-            # Cast to float and store data
-            data_collector.dith_freq = float(demod_freq_tmp)
-            data_collector.theta = float(theta_tmp)
-            print('Dither frequency: ' + str(data_collector.dith_freq))
-            print('Phase difference: ' + str(data_collector.theta))
-            ui = main_screen()
-            widget.addWidget(ui)
-            widget.setCurrentIndex(widget.currentIndex()-2)
-
-    def return_function(self):
-        ui = main_screen()
-        widget.addWidget(ui)
-        widget.setCurrentIndex(widget.currentIndex()-2)
 
 class low_pass_filter_screen(QMainWindow):
     def __init__(self):
@@ -178,83 +127,68 @@ class low_pass_filter_screen(QMainWindow):
             self.error_label.setText('Please choose filter type.')
         else:
             self.error_label.setText('')
-            num_coeff_tmp = self.num_coeff_line.text()
-            cutoff_tmp = self.cut_off_fre_line.text()
+            num_coeff = self.num_coeff_line.text()
+            cutoff = self.cut_off_fre_line.text()
 
             if self.FIR_checkbox.isChecked() or self.Butterworth_checkbox.isChecked():
                 if self.FIR_checkbox.isChecked():
-                    data_collector.filtertype = 'FIR'
+                    filtertype = 'FIR'
                 else:
-                    data_collector.filtertype = 'butter'
-                if len(num_coeff_tmp) == 0 or len(cutoff_tmp) == 0:
+                    filtertype = 'butter'
+                if len(num_coeff) == 0 or len(cutoff) == 0:
                     self.error_label.setText('Please insert all fields.')
-                elif float(cutoff_tmp) > data_collector.fs/2:
-                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.fs/2)/1e6) + ' MHz')
+                elif float(cutoff) > data_collector.osc.fs/2:
+                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
                 else:
-                    # Cast to int and float and store data
-                    data_collector.num_coeff = int(num_coeff_tmp)
-                    data_collector.cutoff = float(cutoff_tmp)
-                    print('Number of filter coefficients: ' + str(data_collector.num_coeff))
-                    print('Cut-off frequency: ' + str(data_collector.cutoff))
+                    # Store data
+                    data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype)
+                    print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
+                    print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
                     # Plot bode diagram
-                    self.plot_bode()
+                    b, a = data_collector.filter.get_coefficients()
+                    self.plot_bode(b, a)
 
             if self.Chebyshev1_checkbox.isChecked():
-                data_collector.filtertype = 'cheby'
-                max_ripple_tmp = self.max_ripple_line.text()
-                if len(num_coeff_tmp) == 0 or len(cutoff_tmp) == 0 or len(max_ripple_tmp) == 0:
+                filtertype = 'cheby1'
+                max_ripple = self.max_ripple_line.text()
+                if len(num_coeff) == 0 or len(cutoff) == 0 or len(max_ripple) == 0:
                     self.error_label.setText('Please insert all fields.')
-                elif float(cutoff_tmp) > data_collector.fs/2:
-                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.fs/2)/1e6) + ' MHz')
+                elif float(cutoff) > data_collector.osc.fs/2:
+                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
                 else:
-                    # Cast to int and float and store data
-                    data_collector.num_coeff = int(num_coeff_tmp)
-                    data_collector.cutoff = float(cutoff_tmp)
-                    data_collector.max_ripple = float(max_ripple_tmp)
-                    print('Number of filter coefficients: ' + str(data_collector.num_coeff))
-                    print('Cut-off frequency: ' + str(data_collector.cutoff))
-                    print('Max. ripple: ' + str(data_collector.max_ripple))
+                    # Store data
+                    data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, max_ripple=float(max_ripple))
+                    print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
+                    print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
+                    print('Max. ripple: ' + str(data_collector.filter.max_ripple))
                     # Plot bode diagram
-                    self.plot_bode()
+                    b, a = data_collector.filter.get_coefficients()
+                    self.plot_bode(b, a)
             
             if self.Elliptic_checkbox.isChecked():
-                data_collector.filtertype = 'elliptic'
-                max_ripple_tmp = self.max_ripple_line.text()
-                min_attenuation_tmp = self.min_attenuation_line.text()
-                if len(num_coeff_tmp) == 0 or len(cutoff_tmp) == 0 or len(max_ripple_tmp) == 0 or len(min_attenuation_tmp) == 0:
+                filtertype = 'elliptic'
+                max_ripple = self.max_ripple_line.text()
+                min_attenuation = self.min_attenuation_line.text()
+                if len(num_coeff) == 0 or len(cutoff) == 0 or len(max_ripple) == 0 or len(min_attenuation) == 0:
                     self.error_label.setText('Please insert all fields.')
-                elif float(cutoff_tmp) > data_collector.fs/2:
-                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.fs/2)/1e6) + ' MHz')
-                elif max_ripple_tmp > min_attenuation_tmp:
-                    self.error_label.setText('Max. ripple must be lower than min. attenuation.')
+                elif float(cutoff) > data_collector.osc.fs/2:
+                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                elif float(max_ripple) > float(min_attenuation):
+                    self.error_label.setText('Max. ripple must be lower than\n min. attenuation.')
                 else:
                     # Cast to int and float and store data
-                    data_collector.num_coeff = int(num_coeff_tmp)
-                    data_collector.cutoff = float(cutoff_tmp)
-                    data_collector.max_ripple = float(max_ripple_tmp)
-                    data_collector.min_attenuation = float(min_attenuation_tmp)
-                    print('Number of filter coefficients: ' + str(data_collector.num_coeff))
-                    print('Cut-off frequency: ' + str(data_collector.cutoff))
-                    print('Max. ripple: ' + str(data_collector.max_ripple))
-                    print('Min. attenuation: ' + str(data_collector.min_attenuation))
+                    data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, max_ripple=float(max_ripple), min_attenuation=float(min_attenuation))
+                    print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
+                    print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
+                    print('Max. ripple: ' + str(data_collector.filter.max_ripple))
+                    print('Min. attenuation: ' + str(data_collector.filter.min_attenuation))
                     # Plot bode diagram
-                    self.plot_bode()
+                    b, a = data_collector.filter.get_coefficients()
+                    self.plot_bode(b, a)
 
-    def plot_bode(self):
-        fs = data_collector.fs
-        if self.FIR_checkbox.isChecked():
-            b = signal.firwin(data_collector.num_coeff, data_collector.cutoff, fs=fs)
-            a=1
-            w, h = signal.freqz(b,a)
-        elif self.Butterworth_checkbox.isChecked():
-            b, a = signal.butter(N=data_collector.num_coeff, Wn = data_collector.cutoff, btype='low', analog=False, fs=fs)
-            w, h = signal.freqz(b,a)
-        elif self.Chebyshev1_checkbox.isChecked():
-            b, a = signal.cheby1(N=data_collector.num_coeff, rp=data_collector.max_ripple, Wn = data_collector.cutoff, btype='low', analog=False, fs=fs)
-            w, h = signal.freqz(b,a)
-        elif self.Elliptic_checkbox.isChecked():
-            b, a = signal.ellip(N=data_collector.num_coeff, rp=data_collector.max_ripple, rs=data_collector.min_attenuation, Wn = data_collector.cutoff, fs=fs)
-            w, h = signal.freqz(b,a)
+    def plot_bode(self, b, a):
+        fs = data_collector.osc.fs
+        w, h = signal.freqz(b,a)
         f = w/np.pi*fs/2
         pen=pg.mkPen(color=(148, 0, 211), width=2)
         self.bode_diagram_amp.clear()
@@ -265,7 +199,7 @@ class low_pass_filter_screen(QMainWindow):
     def return_function(self):
         ui = main_screen()
         widget.addWidget(ui)
-        widget.setCurrentIndex(widget.currentIndex()-3)
+        widget.setCurrentIndex(widget.currentIndex()-2)
 
 class pid_controller_screen(QMainWindow):
     def __init__(self):
@@ -274,51 +208,41 @@ class pid_controller_screen(QMainWindow):
         self.insert_button.clicked.connect(self.insert_function)
         self.return_button.clicked.connect(self.return_function)
 
-    def pid_config(self):
-        return PID(data_collector.Kp, data_collector.Ki, data_collector.Kd, setpoint=0)
-
     def insert_function(self):
-        Kp_tmp = self.p_factor_line.text()
-        Ki_tmp = self.i_factor_line.text()
-        Kd_tmp = self.d_factor_line.text()
+        Kp = self.p_factor_line.text()
+        Ki = self.i_factor_line.text()
+        Kd = self.d_factor_line.text()
 
-        if len(Kp_tmp) == 0 or len(Ki_tmp) == 0 or len(Kd_tmp) == 0:
+        if len(Kp) == 0 or len(Ki) == 0 or len(Kd) == 0:
             self.error_label.setText('Please insert all fields.')
 
         else:
-            # Cast to float and store data
-            data_collector.Kp = float(Kp_tmp)
-            data_collector.Ki = float(Ki_tmp)
-            data_collector.Kd = float(Kd_tmp)
-            print('P-factor: ' + str(data_collector.Kp))
-            print('I-factor: ' + str(data_collector.Ki))
-            print('D-factor: ' + str(data_collector.Kd))
-
-            # Config PID controller
-            data_collector.pid = self.pid_config()
+            # Store data
+            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd))
+            print('P-factor: ' + str(data_collector.pid.Kp))
+            print('I-factor: ' + str(data_collector.pid.Ki))
+            print('D-factor: ' + str(data_collector.pid.Kd))
 
             ui = main_screen()
             widget.addWidget(ui)
-            widget.setCurrentIndex(widget.currentIndex()-4)
+            widget.setCurrentIndex(widget.currentIndex()-3)
 
     def return_function(self):
         ui = main_screen()
         widget.addWidget(ui)
-        widget.setCurrentIndex(widget.currentIndex()-4)
+        widget.setCurrentIndex(widget.currentIndex()-3)
 
 ## main
 # Config UI
 data_collector = globalData()
 app = QApplication(sys.argv)
 osc_s = osc_screen()
-demod_s = demod_screen()
 filter_s = low_pass_filter_screen()
 controller_s = pid_controller_screen()
-ui_s = main_screen(osc_s, demod_s, filter_s, controller_s)
+ui_s = main_screen(osc_s, filter_s, controller_s)
 widget = QtWidgets.QStackedWidget()
 widget.addWidget(ui_s)
 widget.addWidget(osc_s)
-widget.addWidget(demod_s)
 widget.addWidget(filter_s)
 widget.addWidget(controller_s)
 widget.setFixedHeight(601)

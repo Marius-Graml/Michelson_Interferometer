@@ -2,11 +2,11 @@
 import numpy as np
 import pandas as pd
 
-def demodulate(dith_signal_df, w_dith, theta):
-    t = np.array(dith_signal_df['time'])
-    dith_signal_np = np.array(dith_signal_df.iloc[:,1])
+def demodulate(input_signal_df, w_dith, theta):
+    t = np.array(input_signal_df['time'])
+    input_signal = np.array(input_signal_df.iloc[:,1])
 
-    demod_signal = dith_signal_np*np.sin(w_dith*t + theta)
+    demod_signal = input_signal*np.sin(w_dith*t + theta)
 
     demod_signal = np.concatenate((np.reshape(t, (-1,1)), np.reshape(demod_signal, (-1,1))), axis=1)
 
