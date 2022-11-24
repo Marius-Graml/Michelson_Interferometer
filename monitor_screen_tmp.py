@@ -52,6 +52,12 @@ class Ui_Plot_window(object):
         self.reset_button = QtWidgets.QPushButton(self.centralwidget)
         self.reset_button.setGeometry(QtCore.QRect(700, 500, 71, 20))
         self.reset_button.setObjectName("reset_button")
+        self.update_line = QtWidgets.QLineEdit(self.centralwidget)
+        self.update_line.setGeometry(QtCore.QRect(20, 500, 41, 20))
+        self.update_line.setObjectName("update_line")
+        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label.setGeometry(QtCore.QRect(60, 500, 21, 20))
+        self.label.setObjectName("label")
         Plot_window.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(Plot_window)
         self.statusbar.setObjectName("statusbar")
@@ -67,6 +73,7 @@ class Ui_Plot_window(object):
         self.stop_plot_button.setText(_translate("Plot_window", "Stop plot"))
         self.append_checkbox.setText(_translate("Plot_window", "Appending"))
         self.reset_button.setText(_translate("Plot_window", "Reset"))
+        self.label.setText(_translate("Plot_window", "[ms]"))
 from pyqtgraph import PlotWidget
 
 

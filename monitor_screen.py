@@ -1,8 +1,9 @@
 
 from PyQt5 import QtCore, QtWidgets
 from pyqtgraph import PlotWidget
-from demodulation_code import demodulate
 import pyqtgraph as pg
+import numpy as np
+import pandas as pd
 
 class Ui_Plot_window(object):
     def __init__(self, data_collector):
@@ -48,6 +49,12 @@ class Ui_Plot_window(object):
         self.reset_button = QtWidgets.QPushButton(self.centralwidget)
         self.reset_button.setGeometry(QtCore.QRect(700, 500, 71, 20))
         self.reset_button.setObjectName("reset_button")
+        self.update_line = QtWidgets.QLineEdit(self.centralwidget)
+        self.update_line.setGeometry(QtCore.QRect(20, 500, 41, 20))
+        self.update_line.setObjectName("update_line")
+        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label.setGeometry(QtCore.QRect(60, 500, 21, 20))
+        self.label.setObjectName("label")
         Plot_window.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(Plot_window)
         self.statusbar.setObjectName("statusbar")
@@ -66,7 +73,7 @@ class Ui_Plot_window(object):
         # Set axis labels, grid and title
         title_list = ['Oscilloscope input', 'Demodulated signal', 'Filtered signal', 'PID output']
         for n, plot_handle in enumerate(plotItem_list):
-            plot_handle.setLabel(axis='bottom', text='time [ms]')
+            plot_handle.setLabel(axis='bottom', text='time [s]')
             plot_handle.setLabel(axis='left', text='Voltage [V]')
             plot_handle.showGrid(x =True, y=True)
             plot_handle.setTitle(title_list[n])
@@ -90,6 +97,8 @@ class Ui_Plot_window(object):
         self.stop_plot_button.setText(_translate("Plot_window", "Stop plot"))
         self.append_checkbox.setText(_translate("Plot_window", "Appending"))
         self.reset_button.setText(_translate("Plot_window", "Reset"))
+        self.label.setText(_translate("Plot_window", "[ms]"))
+        self.update_line.setText('100')
 
     def start_plot(self):
         if self.data_collector.osc == None:
@@ -100,13 +109,19 @@ class Ui_Plot_window(object):
             self.error_label.setText('Please insert PID controller values.')
         else:
             # Set timer for plot update
-            self.timer.setInterval(1000)
-            self.timer.timeout.connect(self.update_plot)
-            self.timer.start()
+            timer_interval = int(self.update_line.text())
+            if timer_interval < 100:
+                self.error_label.setText('Smallest possible interval value is 100ms')
+            else:
+                self.error_label.setText(' ')
+                self.timer.setInterval(timer_interval)
+                self.timer.timeout.connect(self.update_plot)
+                self.timer.start()
 
     def update_plot(self):
 
         self.stop_plot_button.clicked.connect(self.stop_plot)
+        self.start_plot_button.clicked.connect(self.start_plot)
 
         # Clear all windows
         window_list = [self.plot_window_1, self.plot_window_2, self.plot_window_3, self.plot_window_4]
@@ -117,21 +132,45 @@ class Ui_Plot_window(object):
         color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
         signal_list = self.get_signals()
         for n, window in enumerate(window_list):
-            window.plot(signal_list[n]['time']*1e3, signal_list[n]['ch'], pen=color_list[n]) # in ms
+            window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
+        
+        # Output data
+        #self.data_collector.awg.generate(signal_list[-1])
 
     def get_signals(self):
-        # osc input
-        osc_input_df = self.data_collector.osc.get_osc_input(append=self.append_checkbox.isChecked())
         self.reset_button.clicked.connect(self.data_collector.osc.clear_collector)
         self.append_checkbox.stateChanged.connect(self.data_collector.osc.clear_collector)
-        # demodulated signal
-        demod_signal_df = demodulate(osc_input_df, self.data_collector.osc.dith_freq, self.data_collector.osc.theta)
-        # filter ouput
-        filter_output = self.data_collector.filter.apply(demod_signal_df)
+        # osc input
+        osc_input_df_single = self.data_collector.osc.get_osc_input(append=False)
+        osc_input_df_append = self.data_collector.osc.get_osc_input(append=True)
+        if self.append_checkbox.isChecked():
+            osc_screen = osc_input_df_append
+        else:
+            osc_screen = osc_input_df_single
+        
+        # demodulated signal and filter signal
+        demod_signal_df_append = self.data_collector.dither.demodulate(osc_input_df_append)
+        filter_output_df_append = self.data_collector.filter.apply(demod_signal_df_append)
+        if self.append_checkbox.isChecked():
+            demod_signal_screen = demod_signal_df_append
+            filter_screen = filter_output_df_append
+        else:
+            demod_signal_screen = self.data_collector.dither.demodulate(osc_input_df_single)
+            filter_screen = self.data_collector.filter.apply(demod_signal_screen)
         # PID controller output
-        pid_output = self.data_collector.pid.get_PID_output(filter_output)
+        pid_output = self.data_collector.pid.get_PID_output(filter_output_df_append)
+        # Add dither signal to pid output
+        t = np.array(pid_output['time'])
+        pid_output_dith_np = np.array(pid_output['ch']) + self.data_collector.dither.amp_dith * np.sin(2*np.pi*self.data_collector.dither.dith_freq * t)
+        # Add offset to pid_output
+        pid_output_dith_np = 1/10 * 100/2 + pid_output_dith_np
+        # Protection that output signal does not get to high for piezo and not negative
+        # Done by using voltage limit switch of piezoelectric controller (voltage limit = 100V)
+        # Convert to data frame
+        pid_output_dith = pd.DataFrame(np.concatenate((np.reshape(t, (-1,1)), np.reshape(pid_output_dith_np, (-1,1))), axis=1), columns=['time', 'ch'])
+
         # return signal list
-        return [osc_input_df, demod_signal_df, filter_output, pid_output]
+        return [osc_screen, demod_signal_screen, filter_screen, pid_output_dith]
 
     def stop_plot(self):
         self.timer.stop()

@@ -56,61 +56,63 @@ background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5
       <string>Michelson Interferometer</string>
      </property>
     </widget>
-    <widget class="QWidget" name="">
+    <widget class="QSplitter" name="splitter">
      <property name="geometry">
       <rect>
-       <x>350</x>
-       <y>220</y>
-       <width>151</width>
+       <x>340</x>
+       <y>246</y>
+       <width>161</width>
        <height>241</height>
       </rect>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QPushButton" name="osc_button">
-        <property name="styleSheet">
-         <string notr="true">color: rgb(0,0,0);
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <widget class="QPushButton" name="osc_button">
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0,0,0);
 background-color: rgb(200, 200, 200);</string>
-        </property>
-        <property name="text">
-         <string>Oscilloscope</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="filter_button">
-        <property name="styleSheet">
-         <string notr="true">color: rgb(0,0,0);
+      </property>
+      <property name="text">
+       <string>Oscilloscope</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="dither_button">
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0,0,0);
 background-color: rgb(200, 200, 200);</string>
-        </property>
-        <property name="text">
-         <string>FIR-Filter</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="controller_button">
-        <property name="styleSheet">
-         <string notr="true">color: rgb(0,0,0);
+      </property>
+      <property name="text">
+       <string>Dither Signal</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="filter_button">
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0,0,0);
 background-color: rgb(200, 200, 200);</string>
-        </property>
-        <property name="text">
-         <string>PID Controller</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="monitor_button">
-        <property name="styleSheet">
-         <string notr="true">color: rgb(0,0,0);
+      </property>
+      <property name="text">
+       <string>FIR-Filter</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="controller_button">
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0,0,0);
 background-color: rgb(200, 200, 200);</string>
-        </property>
-        <property name="text">
-         <string>Monitor</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+      </property>
+      <property name="text">
+       <string>PID Controller</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="monitor_button">
+      <property name="styleSheet">
+       <string notr="true">color: rgb(0,0,0);
+background-color: rgb(200, 200, 200);</string>
+      </property>
+      <property name="text">
+       <string>Monitor</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>

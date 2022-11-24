@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>60</y>
+      <width>301</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 24pt &quot;MS Shell Dlg 2&quot;;
+color: rgb(0, 0, 0);</string>
+    </property>
+    <property name="text">
+     <string>Dither Setup</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="status_label">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>410</y>
+      <width>331</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color: rgb(255, 0, 0);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="return_button">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>490</y>
+      <width>111</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Return to menu</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="insert_button">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>460</y>
+      <width>111</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="text">
+     <string>Insert</string>
+    </property>
+   </widget>
+   <widget class="QSplitter" name="splitter">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>170</y>
+      <width>351</width>
+      <height>221</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Vertical</enum>
+    </property>
+    <widget class="QLabel" name="label_5">
+     <property name="styleSheet">
+      <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
+     </property>
+     <property name="text">
+      <string>Dither frequency</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="dith_freq_line"/>
+    <widget class="QLabel" name="label_6">
+     <property name="styleSheet">
+      <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
+     </property>
+     <property name="text">
+      <string>Phase difference demodulation signal</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="phase_diff_line"/>
+    <widget class="QLabel" name="label_7">
+     <property name="styleSheet">
+      <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
+     </property>
+     <property name="text">
+      <string>Amplitude dither signal</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="amp_dith_line"/>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>26</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
