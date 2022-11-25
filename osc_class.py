@@ -9,11 +9,11 @@ class osc():
         self.timebase = timebase
         self.input_ch = input_ch
         self.output_ch = output_ch
-        #8928571.42857143 # in Hz
         self.obj = Oscilloscope(self.ip_address, force_connect = True)
         t = self.obj.get_data()['time']
         self.fs = 1/(t[1] - t[0])
         self.osc_input_collector = []
+        self.signal = None
 
     def config(self):
         # Trigger on input Channel 1, auto, 0V 
@@ -28,18 +28,18 @@ class osc():
         self.obj.set_source(self.input_ch, 'Input1')
 
     def get_osc_input(self, append):
-        osc_input_df = self.get_one_ch_data() 
+        output = self.get_one_ch_data() 
         if append == True:
-            data = osc_input_df['ch'].values.tolist()
+            data = output['ch'].values.tolist()
             for item in data:
                 self.osc_input_collector.append(item)
             osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
             n_axis = np.arange(np.shape(osc_input)[0])
             t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
             osc_input = np.concatenate((t_axis, osc_input), axis=1)
-            osc_input_df = pd.DataFrame(osc_input, columns=['time', 'ch'])
+            output = pd.DataFrame(osc_input, columns=['time', 'ch'])
 
-        return osc_input_df
+        return output
 
     def get_one_ch_data(self):
         data = self.obj.get_data()
@@ -55,3 +55,6 @@ class osc():
 
     def clear_collector(self):
         self.osc_input_collector = []
+
+    def stop(self):
+        self.obj.disable_input(channel=self.input_ch)

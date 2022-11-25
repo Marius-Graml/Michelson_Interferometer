@@ -7,6 +7,7 @@ class dither():
         self.dith_freq = dith_freq
         self.theta = theta
         self.amp_dith = amp_dith
+        self.signal = None
 
     def demodulate(self, input_signal_df):
         t = np.array(input_signal_df['time'])
@@ -15,5 +16,5 @@ class dither():
         demod_signal = input_signal*np.sin(2*np.pi*self.dith_freq*t + self.theta)
 
         demod_signal = np.concatenate((np.reshape(t, (-1,1)), np.reshape(demod_signal, (-1,1))), axis=1)
-
-        return pd.DataFrame(demod_signal, columns=['time', 'ch'])
+        output = pd.DataFrame(demod_signal, columns=['time', 'ch'])
+        return output

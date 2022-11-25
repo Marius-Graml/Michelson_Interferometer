@@ -11,3 +11,6 @@ class awg():
         # gen_signal = pd-DataFrame
         gen_signal_list = gen_signal_df['ch'].values.tolist()
         self.obj.generate_waveform(channel=1, sample_rate='Auto',lut_data=gen_signal_list, frequency=1e-3, amplitude=1)
+
+    def stop(self):
+        self.obj.enable_output(channel=self.output_ch, enable=False)

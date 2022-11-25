@@ -11,6 +11,7 @@ class low_pass_filter():
         self.fs = fs
         self.max_ripple = max_ripple
         self.min_attenuation = min_attenuation
+        self.signal = None
 
     def apply(self, input_signal):
 
@@ -40,9 +41,9 @@ class low_pass_filter():
         # t_axis = n_axis/self.fs
 
         y = np.concatenate((np.reshape(t, (-1,1)), np.reshape(y_filtered, (-1,1))), axis = 1)
-        output_signal_df = pd.DataFrame(y, columns=['time', 'ch'])
+        output = pd.DataFrame(y, columns=['time', 'ch'])
 
-        return output_signal_df
+        return output
 
     def get_coefficients(self):
         if self.filtertype == 'FIR':
