@@ -36,10 +36,6 @@ class low_pass_filter():
         else:
             y_filtered = signal.lfilter(myfilter[0], myfilter[1], x)
 
-        # Output signal as pandas dataframe with time axis
-        # n_axis = np.arange(np.shape(y_filtered)[0])
-        # t_axis = n_axis/self.fs
-
         y = np.concatenate((np.reshape(t, (-1,1)), np.reshape(y_filtered, (-1,1))), axis = 1)
         output = pd.DataFrame(y, columns=['time', 'ch'])
 

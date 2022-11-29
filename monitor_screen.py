@@ -41,10 +41,12 @@ class Ui_Plot_window(object):
         self.splitter_3.setObjectName("splitter_3")
         self.stop_checkbox = QtWidgets.QCheckBox(self.splitter_3)
         self.stop_checkbox.setObjectName("stop_checkbox")
-        self.reset_button = QtWidgets.QPushButton(self.splitter_3)
-        self.reset_button.setObjectName("reset_button")
         self.append_checkbox = QtWidgets.QCheckBox(self.splitter_3)
         self.append_checkbox.setObjectName("append_checkbox")
+        self.en_out_checkbox = QtWidgets.QCheckBox(self.splitter_3)
+        self.en_out_checkbox.setObjectName("en_out_checkbox")
+        self.reset_button = QtWidgets.QPushButton(self.splitter_3)
+        self.reset_button.setObjectName("reset_button")
         self.pid_output_edit = QtWidgets.QPlainTextEdit(self.splitter_3)
         self.pid_output_edit.setObjectName("pid_output_edit")
         Plot_window.setCentralWidget(self.centralwidget)
@@ -70,8 +72,9 @@ class Ui_Plot_window(object):
             plot_handle.showGrid(x =True, y=True)
             plot_handle.setTitle(title_list[n])
 
-        # Set checkbox
+        # Set checkboxes
         self.append_checkbox.setChecked(True)
+        self.en_out_checkbox.setChecked(True)
 
         # Start Stop Flag
         self.flag = 0
@@ -87,26 +90,9 @@ class Ui_Plot_window(object):
         _translate = QtCore.QCoreApplication.translate
         Plot_window.setWindowTitle(_translate("Plot_window", "MainWindow"))
         self.stop_checkbox.setText(_translate("Plot_window", "Stop plot"))
-        self.reset_button.setText(_translate("Plot_window", "Reset"))
         self.append_checkbox.setText(_translate("Plot_window", "Appending"))
-
-    # def start_plot(self):
-    #     if self.data_collector.osc == None:
-    #         self.error_label.setText('Please start oscilloscope first.')
-    #     elif self.data_collector.filter==None:
-    #         self.error_label.setText('Please insert filter values.')
-    #     elif self.data_collector.pid == None:
-    #         self.error_label.setText('Please insert PID controller values.')
-    #     else:
-    #         # Set timer for plot update
-    #         timer_interval = int(self.update_line.text())
-    #         if timer_interval < 100:
-    #             self.error_label.setText('Smallest possible interval value is 100ms')
-    #         else:
-    #             self.error_label.setText(' ')
-    #             self.timer.setInterval(timer_interval)
-    #             self.timer.timeout.connect(self.update_plot)
-    #             self.timer.start()
+        self.en_out_checkbox.setText(_translate("Plot_window", "Enable output"))
+        self.reset_button.setText(_translate("Plot_window", "Reset"))
 
     def check_stop_function(self):
         if not self.stop_checkbox.isChecked():
@@ -122,28 +108,34 @@ class Ui_Plot_window(object):
             window.clear()
 
         # Plot new data
-        osc_append = self.data_collector.osc.get_osc_input(append=True)
-        demod_append = self.data_collector.dither.demodulate(osc_append)
-        filter_append = self.data_collector.filter.apply(demod_append)
-        pid_output = self.data_collector.pid.get_PID_output_all(filter_append, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-
         color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
         if self.append_checkbox.isChecked():
-            signal_list = [osc_append, demod_append, filter_append, pid_output]
+            osc_signal = self.data_collector.osc.get_osc_input(append=True)
+            demod_signal = self.data_collector.dither.demodulate(osc_signal)
+            filter_signal = self.data_collector.filter.apply(demod_signal)
+            # pid_output = self.data_collector.pid.get_PID_output_all(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+            # Single output considering all
+            pid_output = self.data_collector.pid.get_PID_output_all_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+            signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
         else:
             osc_signal = self.data_collector.osc.get_osc_input(append=False)
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
+            # Single output considering all
+            pid_output = self.data_collector.pid.get_PID_output_all_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+            # Single output considering one
+            # pid_output = self.data_collector.pid.get_PID_output_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
             signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
         for n, window in enumerate(window_list):
             window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
-
-        # Output data
-        if len(pid_output) > 65536:
-            self.data_collector.osc.clear_collector()
+        
+        if self.en_out_checkbox.isChecked():
+            self.data_collector.awg.output(enable=True)
+            self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch']))
+            self.data_collector.awg.generate(pid_output['ch'], output_freq=self.data_collector.dither.dith_freq)
         else:
-            self.pid_output_edit.setPlainText('PID output: ' + str(pid_output['ch'].iat[-1]))
-            #data_collector.awg.generate(pid_output['ch'].iat[-1])
+            self.data_collector.awg.output(enable=False)
+
 
     def start_stop_function(self):
         if self.flag == 0:
@@ -154,36 +146,3 @@ class Ui_Plot_window(object):
             self.timer.start()
             self.flag = 0
             self.start_stop_button.setText('Stop plot')
-        
-        # # Output data
-        # if len(signal_list[-1]['ch']) > 65536:
-        #     self.data_collector.osc.clear_collector()
-        #     self.error_label.setText('Maximum output length reached, output signal is resetted.')
-        # else:
-        #     self.error_label.setText(' ')
-        #     self.data_collector.awg.generate(signal_list[-1])
-
-    # def get_signals(self):
-    #     # self.reset_button.clicked.connect(self.data_collector.osc.clear_collector)
-    #     self.append_checkbox.stateChanged.connect(self.data_collector.osc.clear_collector)
-    #     # osc input
-    #     osc_input_df_single = self.data_collector.osc.get_osc_input(append=False)
-    #     osc_input_df_append = self.data_collector.osc.get_osc_input(append=True)
-    #     if self.append_checkbox.isChecked():
-    #         osc_screen = osc_input_df_append
-    #     else:
-    #         osc_screen = osc_input_df_single
-        
-    #     # demodulated signal and filter signal
-    #     demod_signal_df_append = self.data_collector.dither.demodulate(osc_input_df_append)
-    #     filter_output_df_append = self.data_collector.filter.apply(demod_signal_df_append)
-    #     if self.append_checkbox.isChecked():
-    #         demod_signal_screen = demod_signal_df_append
-    #         filter_screen = filter_output_df_append
-    #     else:
-    #         demod_signal_screen = self.data_collector.dither.demodulate(osc_input_df_single)
-    #         filter_screen = self.data_collector.filter.apply(demod_signal_screen)
-    #     # PID controller output
-    #     pid_output = self.data_collector.pid.get_PID_output_all(filter_output_df_append, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-    #     # return signal list
-    #     return [osc_screen, demod_signal_screen, filter_screen, pid_output]

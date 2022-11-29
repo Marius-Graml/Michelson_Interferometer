@@ -77,14 +77,19 @@
       <string>Stop plot</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="reset_button">
-     <property name="text">
-      <string>Reset</string>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="append_checkbox">
      <property name="text">
       <string>Appending</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="en_out_checkbox">
+     <property name="text">
+      <string>Enable output</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="reset_button">
+     <property name="text">
+      <string>Reset</string>
      </property>
     </widget>
     <widget class="QPlainTextEdit" name="pid_output_edit"/>

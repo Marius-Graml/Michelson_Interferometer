@@ -9,11 +9,13 @@ class osc():
         self.timebase = timebase
         self.input_ch = input_ch
         self.output_ch = output_ch
+        #8928571.42857143 # in Hz
         self.obj = Oscilloscope(self.ip_address, force_connect = True)
         t = self.obj.get_data()['time']
         self.fs = 1/(t[1] - t[0])
         self.osc_input_collector = []
         self.signal = None
+        self.c = 0
 
     def config(self):
         # Trigger on input Channel 1, auto, 0V 
@@ -33,16 +35,25 @@ class osc():
             data = output['ch'].values.tolist()
             for item in data:
                 self.osc_input_collector.append(item)
-            osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
-            n_axis = np.arange(np.shape(osc_input)[0])
-            t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
+            if len(self.osc_input_collector) <= 30720:
+                osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
+                n_axis = np.arange(len(self.osc_input_collector))
+                t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
+            elif len(self.osc_input_collector) > 30720:
+                del self.osc_input_collector[0:1024]
+                osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
+                self.c = self.c+1
+                n_start = self.c*1024
+                n_axis = np.arange(n_start, n_start+30720)
+                t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
+            print(len(self.osc_input_collector))
             osc_input = np.concatenate((t_axis, osc_input), axis=1)
             output = pd.DataFrame(osc_input, columns=['time', 'ch'])
 
         return output
 
     def get_one_ch_data(self):
-        data = self.obj.get_data()
+        data = self.obj.get_data(timeout=0.1)
         self.fs = 1/(data['time'][1] - data['time'][0])
         if self.input_ch:
             signal_df = pd.DataFrame(data).iloc[:,[0,1]]
@@ -54,7 +65,7 @@ class osc():
         return signal_df
 
     def clear_collector(self):
-        self.osc_input_collector = []
+        self.osc_input_collector.clear()
 
     def stop(self):
         self.obj.disable_input(channel=self.input_ch)

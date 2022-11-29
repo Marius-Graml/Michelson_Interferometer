@@ -108,7 +108,7 @@ class osc_screen(QMainWindow):
                 print('Starting oscilloscope...')
                 data_collector.osc = osc(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0c22%12]', timebase=timebase, input_ch=input_ch, output_ch=output_ch)
                 data_collector.osc.config()
-                #data_collector.awg = awg(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0b52%7]', output_ch=output_ch)
+                data_collector.awg = awg(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0b52%7]', output_ch=output_ch)
                 print('Oscilloscope is running.')
                 self.status_label.setText('Oscilloscope is running.')
 
@@ -254,16 +254,18 @@ class pid_controller_screen(QMainWindow):
         Kp = self.p_factor_line.text()
         Ki = self.i_factor_line.text()
         Kd = self.d_factor_line.text()
+        setpoint = self.setpoint_line.text()
 
-        if len(Kp) == 0 or len(Ki) == 0 or len(Kd) == 0:
+        if len(Kp) == 0 or len(Ki) == 0 or len(Kd) == 0 or len(setpoint) == 0:
             self.error_label.setText('Please insert all fields.')
 
         else:
             # Store data
-            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd))
+            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd), setpoint=float(setpoint))
             print('P-factor: ' + str(data_collector.pid.Kp))
             print('I-factor: ' + str(data_collector.pid.Ki))
             print('D-factor: ' + str(data_collector.pid.Kd))
+            print('Setpoint: ' + str(data_collector.pid.setpoint))
 
             ui = main_screen()
             widget.addWidget(ui)
@@ -273,45 +275,6 @@ class pid_controller_screen(QMainWindow):
         ui = main_screen()
         widget.addWidget(ui)
         widget.setCurrentIndex(widget.currentIndex()-4)
-
-# class controlling_screen(QMainWindow):
-#     def __init__(self):
-#         super(controlling_screen, self).__init__()
-#         loadUi('controlling_screen.ui', self)
-#         self.start_button.clicked.connect(self.start_function)
-#         self.monitor_button.clicked.connect(self.tomonitor)
-#         self.return_button.clicked.connect(self.return_function)
-
-#     def start_function(self):
-#         data_collector.timer.setInterval(1)
-#         data_collector.timer.timeout.connect(self.update_function)
-#         data_collector.timer.start()
-
-#     def update_function(self):
-#         self.stop_button.clicked.connect(self.stop_function)
-#         self.reset_button.clicked.connect(self.reset_function)
-#         osc_input_df_append = data_collector.osc.get_osc_input(append=True)
-#         demod_signal_df_append = data_collector.dither.demodulate(osc_input_df_append)
-#         filter_output_df_append = data_collector.filter.apply(demod_signal_df_append)
-#         pid_output = data_collector.pid.get_PID_output_all(filter_output_df_append, data_collector.dither.dith_freq, data_collector.dither.amp_dith)
-#         # Output data
-#         if len(pid_output) > 65536:
-#             data_collector.osc.clear_collector()
-#         else:
-#             self.pid_output_edit.setPlainText(str(pid_output['ch'].iat[-1]))
-#             #data_collector.awg.generate(pid_output['ch'].iat[-1])
-
-#     def stop_function(self):
-#         self.timer.stop()
-
-#     def reset_function(self):
-#         self.reset_button.clicked.connect(data_collector.osc.clear_collector)
-#         self.pid_output_edit.setPlainText('0')
-
-#     def return_function(self):
-#         ui = main_screen()
-#         widget.addWidget(ui)
-#         widget.setCurrentIndex(widget.currentIndex()-5)
 
 ## main
 # Config UI

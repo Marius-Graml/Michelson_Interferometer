@@ -44,10 +44,12 @@ class Ui_Plot_window(object):
         self.splitter_3.setObjectName("splitter_3")
         self.stop_checkbox = QtWidgets.QCheckBox(self.splitter_3)
         self.stop_checkbox.setObjectName("stop_checkbox")
-        self.reset_button = QtWidgets.QPushButton(self.splitter_3)
-        self.reset_button.setObjectName("reset_button")
         self.append_checkbox = QtWidgets.QCheckBox(self.splitter_3)
         self.append_checkbox.setObjectName("append_checkbox")
+        self.en_out_checkbox = QtWidgets.QCheckBox(self.splitter_3)
+        self.en_out_checkbox.setObjectName("en_out_checkbox")
+        self.reset_button = QtWidgets.QPushButton(self.splitter_3)
+        self.reset_button.setObjectName("reset_button")
         self.pid_output_edit = QtWidgets.QPlainTextEdit(self.splitter_3)
         self.pid_output_edit.setObjectName("pid_output_edit")
         Plot_window.setCentralWidget(self.centralwidget)
@@ -62,8 +64,9 @@ class Ui_Plot_window(object):
         _translate = QtCore.QCoreApplication.translate
         Plot_window.setWindowTitle(_translate("Plot_window", "MainWindow"))
         self.stop_checkbox.setText(_translate("Plot_window", "Stop plot"))
-        self.reset_button.setText(_translate("Plot_window", "Reset"))
         self.append_checkbox.setText(_translate("Plot_window", "Appending"))
+        self.en_out_checkbox.setText(_translate("Plot_window", "Enable output"))
+        self.reset_button.setText(_translate("Plot_window", "Reset"))
 from pyqtgraph import PlotWidget
 
 
