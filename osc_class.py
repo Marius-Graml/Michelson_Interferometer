@@ -2,6 +2,7 @@
 from moku.instruments import Oscilloscope
 import pandas as pd
 import numpy as np
+from scipy import signal
 
 class osc():
     def __init__(self, ip_address, timebase, input_ch, output_ch):
@@ -28,8 +29,9 @@ class osc():
         # Generate dither signal for on channel 2 and measure input signal on channel 1
         # self.obj.set_source(self.output_ch, 'Output1') # loop back output
         self.obj.set_source(self.input_ch, 'Input1')
+        self.obj.set_interpolation(interpolation='Gaussian')
 
-    def get_osc_input(self, append):
+    def get_osc_input(self, append, dith_freq, filtered):
         output = self.get_one_ch_data() 
         if append == True:
             data = output['ch'].values.tolist()
@@ -49,8 +51,14 @@ class osc():
             print(len(self.osc_input_collector))
             osc_input = np.concatenate((t_axis, osc_input), axis=1)
             output = pd.DataFrame(osc_input, columns=['time', 'ch'])
-
-        return output
+        if filtered:
+            myfilter = signal.firwin(1000, dith_freq*2, fs=self.fs)
+            output['ch'] = signal.lfilter(myfilter, [1.0], output['ch'])
+        # Get mean of input
+        sig_mean = np.mean(output['ch'][-1024:]) * np.ones((1024, 1))
+        sig_mean = np.concatenate((np.reshape(np.array(output['time'].iloc[-1024:]), (-1,1)), sig_mean), axis=1)
+        sig_mean = pd.DataFrame(sig_mean, columns=['time', 'ch'])
+        return output, sig_mean
 
     def get_one_ch_data(self):
         data = self.obj.get_data(timeout=0.1)

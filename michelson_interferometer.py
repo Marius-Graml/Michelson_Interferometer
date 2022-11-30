@@ -261,7 +261,7 @@ class pid_controller_screen(QMainWindow):
 
         else:
             # Store data
-            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd), setpoint=float(setpoint))
+            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd), setpoint=float(setpoint), amp_dith=data_collector.dither.amp_dith)
             print('P-factor: ' + str(data_collector.pid.Kp))
             print('I-factor: ' + str(data_collector.pid.Ki))
             print('D-factor: ' + str(data_collector.pid.Kd))

@@ -30,13 +30,8 @@ class Ui_Plot_window(object):
         self.plot_window_3.setObjectName("plot_window_3")
         self.plot_window_4 = PlotWidget(self.splitter_2)
         self.plot_window_4.setObjectName("plot_window_4")
-        self.error_label = QtWidgets.QLabel(self.centralwidget)
-        self.error_label.setGeometry(QtCore.QRect(30, 550, 371, 16))
-        self.error_label.setStyleSheet("color: rgb(255, 0, 0);")
-        self.error_label.setText("")
-        self.error_label.setObjectName("error_label")
         self.splitter_3 = QtWidgets.QSplitter(self.centralwidget)
-        self.splitter_3.setGeometry(QtCore.QRect(20, 500, 751, 61))
+        self.splitter_3.setGeometry(QtCore.QRect(20, 500, 751, 51))
         self.splitter_3.setOrientation(QtCore.Qt.Horizontal)
         self.splitter_3.setObjectName("splitter_3")
         self.stop_checkbox = QtWidgets.QCheckBox(self.splitter_3)
@@ -45,10 +40,20 @@ class Ui_Plot_window(object):
         self.append_checkbox.setObjectName("append_checkbox")
         self.en_out_checkbox = QtWidgets.QCheckBox(self.splitter_3)
         self.en_out_checkbox.setObjectName("en_out_checkbox")
+        self.in_filter_checkbox = QtWidgets.QCheckBox(self.splitter_3)
+        self.in_filter_checkbox.setObjectName("in_filter_checkbox")
         self.reset_button = QtWidgets.QPushButton(self.splitter_3)
         self.reset_button.setObjectName("reset_button")
         self.pid_output_edit = QtWidgets.QPlainTextEdit(self.splitter_3)
         self.pid_output_edit.setObjectName("pid_output_edit")
+        self.splitter_4 = QtWidgets.QSplitter(self.centralwidget)
+        self.splitter_4.setGeometry(QtCore.QRect(20, 550, 300, 21))
+        self.splitter_4.setOrientation(QtCore.Qt.Horizontal)
+        self.splitter_4.setObjectName("splitter_4")
+        self.dither_checkbox = QtWidgets.QCheckBox(self.splitter_4)
+        self.dither_checkbox.setObjectName("dither_checkbox")
+        self.consider_checkbox = QtWidgets.QCheckBox(self.splitter_4)
+        self.consider_checkbox.setObjectName("consider_checkbox")
         Plot_window.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(Plot_window)
         self.statusbar.setObjectName("statusbar")
@@ -75,6 +80,7 @@ class Ui_Plot_window(object):
         # Set checkboxes
         self.append_checkbox.setChecked(True)
         self.en_out_checkbox.setChecked(True)
+        self.consider_checkbox.setChecked(True)
 
         # Start Stop Flag
         self.flag = 0
@@ -82,7 +88,7 @@ class Ui_Plot_window(object):
         # Initialize timer
         self.timer = QtCore.QTimer()
         # Start plotting
-        self.timer.setInterval(100)
+        self.timer.setInterval(50)
         self.timer.timeout.connect(self.check_stop_function)
         self.timer.start()
 
@@ -91,8 +97,11 @@ class Ui_Plot_window(object):
         Plot_window.setWindowTitle(_translate("Plot_window", "MainWindow"))
         self.stop_checkbox.setText(_translate("Plot_window", "Stop plot"))
         self.append_checkbox.setText(_translate("Plot_window", "Appending"))
-        self.en_out_checkbox.setText(_translate("Plot_window", "Enable output"))
+        self.en_out_checkbox.setText(_translate("Plot_window", "Generate output"))
+        self.in_filter_checkbox.setText(_translate("Plot_window", "Input filter"))
         self.reset_button.setText(_translate("Plot_window", "Reset"))
+        self.dither_checkbox.setText(_translate("Plot_window", "Ignore dither signal"))
+        self.consider_checkbox.setText(_translate("Plot_window", "Consider single sample"))
 
     def check_stop_function(self):
         if not self.stop_checkbox.isChecked():
@@ -100,7 +109,7 @@ class Ui_Plot_window(object):
     
     def update_plot(self):
 
-        self.reset_button.clicked.connect(self.data_collector.osc.clear_collector)
+        self.reset_button.clicked.connect(self.reset_function)
 
         # Clear all windows
         window_list = [self.plot_window_1, self.plot_window_2, self.plot_window_3, self.plot_window_4]
@@ -110,30 +119,63 @@ class Ui_Plot_window(object):
         # Plot new data
         color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
         if self.append_checkbox.isChecked():
-            osc_signal = self.data_collector.osc.get_osc_input(append=True)
+            self.in_filter_checkbox.setVisible(True)
+            osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=True, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
-            # pid_output = self.data_collector.pid.get_PID_output_all(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-            # Single output considering all
-            pid_output = self.data_collector.pid.get_PID_output_all_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-            signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
         else:
-            osc_signal = self.data_collector.osc.get_osc_input(append=False)
+            self.in_filter_checkbox.setVisible(False)
+            osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=False, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
-            # Single output considering all
-            pid_output = self.data_collector.pid.get_PID_output_all_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-            # Single output considering one
-            # pid_output = self.data_collector.pid.get_PID_output_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-            signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
+        if self.dither_checkbox.isChecked():
+            pid_output = self.data_collector.pid.get_PID_output_single(osc_signal, 0, 0, single=self.consider_checkbox.isChecked())
+        else:
+            pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith, single=self.consider_checkbox.isChecked())
+        signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
+
         for n, window in enumerate(window_list):
             window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
+        window_list[0].plot(sig_mean['time'], sig_mean['ch'], pen=pg.mkPen(color=(0, 134, 255)))
+
+
+        # # Plot new data
+        # color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
+        # if self.append_checkbox.isChecked():
+        #     osc_signal = self.data_collector.osc.get_osc_input(append=True)
+        #     demod_signal = self.data_collector.dither.demodulate(osc_signal)
+        #     filter_signal = self.data_collector.filter.apply(demod_signal)
+        #     if self.dither_checkbox.isChecked():
+        #         #pid_output = self.data_collector.pid.get_PID_output_single_all(osc_signal, 0, 0)
+        #         pid_output = self.data_collector.pid.get_PID_output_single_last(osc_signal, 0, 0)
+        #     else:
+        #         #pid_output = self.data_collector.pid.get_PID_output_single_all(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+        #         pid_output = self.data_collector.pid.get_PID_output_single_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+        #     signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
+        # else:
+        #     osc_signal = self.data_collector.osc.get_osc_input(append=False)
+        #     demod_signal = self.data_collector.dither.demodulate(osc_signal)
+        #     filter_signal = self.data_collector.filter.apply(demod_signal)
+        #     # Single output considering all
+        #     if self.dither_checkbox.isChecked():
+        #         #pid_output = self.data_collector.pid.get_PID_output_single_all(osc_signal, 0, 0)
+        #         # Single output considering one
+        #         pid_output = self.data_collector.pid.get_PID_output_single_last(osc_signal, 0, 0)
+        #     else:
+        #         # pid_output = self.data_collector.pid.get_PID_output_single_all(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+        #         # Single output considering one
+        #         pid_output = self.data_collector.pid.get_PID_output_single_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
+        #     signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
+        # for n, window in enumerate(window_list):
+        #     window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
         
         if self.en_out_checkbox.isChecked():
+            self.data_collector.pid.obj.auto_mode = True
             self.data_collector.awg.output(enable=True)
             self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch']))
             self.data_collector.awg.generate(pid_output['ch'], output_freq=self.data_collector.dither.dith_freq)
         else:
+            self.data_collector.pid.obj.auto_mode = False
             self.data_collector.awg.output(enable=False)
 
 
@@ -146,3 +188,8 @@ class Ui_Plot_window(object):
             self.timer.start()
             self.flag = 0
             self.start_stop_button.setText('Stop plot')
+
+    def reset_function(self):
+        self.data_collector.osc.clear_collector()
+        self.data_collector.pid.reset_pid()
+        self.pid_output_edit.setPlainText('Input buffer and PID buffer resetted.')

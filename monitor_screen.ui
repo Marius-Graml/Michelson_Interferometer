@@ -44,29 +44,13 @@
     <widget class="PlotWidget" name="plot_window_3"/>
     <widget class="PlotWidget" name="plot_window_4"/>
    </widget>
-   <widget class="QLabel" name="error_label">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>550</y>
-      <width>371</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">color: rgb(255, 0, 0);</string>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-   </widget>
    <widget class="QSplitter" name="splitter_3">
     <property name="geometry">
      <rect>
       <x>20</x>
       <y>500</y>
       <width>751</width>
-      <height>61</height>
+      <height>51</height>
      </rect>
     </property>
     <property name="orientation">
@@ -84,7 +68,12 @@
     </widget>
     <widget class="QCheckBox" name="en_out_checkbox">
      <property name="text">
-      <string>Enable output</string>
+      <string>Generate output</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="in_filter_checkbox">
+     <property name="text">
+      <string>Input filter</string>
      </property>
     </widget>
     <widget class="QPushButton" name="reset_button">
@@ -93,6 +82,29 @@
      </property>
     </widget>
     <widget class="QPlainTextEdit" name="pid_output_edit"/>
+   </widget>
+   <widget class="QSplitter" name="splitter_4">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>550</y>
+      <width>300</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <widget class="QCheckBox" name="dither_checkbox">
+     <property name="text">
+      <string>Ignore dither signal</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="consider_checkbox">
+     <property name="text">
+      <string>Consider single sample</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
