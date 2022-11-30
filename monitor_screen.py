@@ -119,12 +119,10 @@ class Ui_Plot_window(object):
         # Plot new data
         color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
         if self.append_checkbox.isChecked():
-            self.in_filter_checkbox.setVisible(True)
             osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=True, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
         else:
-            self.in_filter_checkbox.setVisible(False)
             osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=False, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
@@ -136,7 +134,7 @@ class Ui_Plot_window(object):
 
         for n, window in enumerate(window_list):
             window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
-        window_list[0].plot(sig_mean['time'], sig_mean['ch'], pen=pg.mkPen(color=(0, 134, 255)))
+        window_list[0].plot(sig_mean['time'], sig_mean['ch'], pen=pg.mkPen(color=(0, 102, 0)))
 
 
         # # Plot new data
@@ -172,7 +170,7 @@ class Ui_Plot_window(object):
         if self.en_out_checkbox.isChecked():
             self.data_collector.pid.obj.auto_mode = True
             self.data_collector.awg.output(enable=True)
-            self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch']))
+            self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch'][0]))
             self.data_collector.awg.generate(pid_output['ch'], output_freq=self.data_collector.dither.dith_freq)
         else:
             self.data_collector.pid.obj.auto_mode = False

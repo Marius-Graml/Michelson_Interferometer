@@ -33,24 +33,23 @@ class osc():
 
     def get_osc_input(self, append, dith_freq, filtered):
         output = self.get_one_ch_data() 
-        if append == True:
-            data = output['ch'].values.tolist()
-            for item in data:
-                self.osc_input_collector.append(item)
-            if len(self.osc_input_collector) <= 30720:
-                osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
-                n_axis = np.arange(len(self.osc_input_collector))
-                t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
-            elif len(self.osc_input_collector) > 30720:
-                del self.osc_input_collector[0:1024]
-                osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
-                self.c = self.c+1
-                n_start = self.c*1024
-                n_axis = np.arange(n_start, n_start+30720)
-                t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
-            print(len(self.osc_input_collector))
-            osc_input = np.concatenate((t_axis, osc_input), axis=1)
-            output = pd.DataFrame(osc_input, columns=['time', 'ch'])
+        data = output['ch'].values.tolist()
+        for item in data:
+            self.osc_input_collector.append(item)
+        if len(self.osc_input_collector) <= 30720:
+            osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
+            n_axis = np.arange(len(self.osc_input_collector))
+            t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
+        elif len(self.osc_input_collector) > 30720:
+            del self.osc_input_collector[0:1024]
+            osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
+            self.c = self.c+1
+            n_start = self.c*1024
+            n_axis = np.arange(n_start, n_start+30720)
+            t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
+        print(len(self.osc_input_collector))
+        osc_input = np.concatenate((t_axis, osc_input), axis=1)
+        output = pd.DataFrame(osc_input, columns=['time', 'ch'])
         if filtered:
             myfilter = signal.firwin(1000, dith_freq*2, fs=self.fs)
             output['ch'] = signal.lfilter(myfilter, [1.0], output['ch'])
@@ -58,7 +57,12 @@ class osc():
         sig_mean = np.mean(output['ch'][-1024:]) * np.ones((1024, 1))
         sig_mean = np.concatenate((np.reshape(np.array(output['time'].iloc[-1024:]), (-1,1)), sig_mean), axis=1)
         sig_mean = pd.DataFrame(sig_mean, columns=['time', 'ch'])
-        return output, sig_mean
+        if append == False:
+            output_short = output.iloc[-1024:, :]
+            output_short = output_short.reset_index(drop=True, inplace=False)
+            return output_short, sig_mean
+        else:
+            return output, sig_mean
 
     def get_one_ch_data(self):
         data = self.obj.get_data(timeout=0.1)
