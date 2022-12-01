@@ -2,8 +2,6 @@
 from PyQt5 import QtCore, QtWidgets
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
-import numpy as np
-import pandas as pd
 
 class Ui_Plot_window(object):
     def __init__(self, data_collector):
@@ -127,45 +125,16 @@ class Ui_Plot_window(object):
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
         if self.dither_checkbox.isChecked():
+            self.data_collector.pid.obj.output_limits = (-5,5)
             pid_output = self.data_collector.pid.get_PID_output_single(osc_signal, 0, 0, single=self.consider_checkbox.isChecked())
         else:
+            self.data_collector.pid.obj.output_limits = (-5+self.data_collector.dither.amp_dith,5-self.data_collector.dither.amp_dith)
             pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith, single=self.consider_checkbox.isChecked())
         signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
 
         for n, window in enumerate(window_list):
             window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
         window_list[0].plot(sig_mean['time'], sig_mean['ch'], pen=pg.mkPen(color=(0, 102, 0)))
-
-
-        # # Plot new data
-        # color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
-        # if self.append_checkbox.isChecked():
-        #     osc_signal = self.data_collector.osc.get_osc_input(append=True)
-        #     demod_signal = self.data_collector.dither.demodulate(osc_signal)
-        #     filter_signal = self.data_collector.filter.apply(demod_signal)
-        #     if self.dither_checkbox.isChecked():
-        #         #pid_output = self.data_collector.pid.get_PID_output_single_all(osc_signal, 0, 0)
-        #         pid_output = self.data_collector.pid.get_PID_output_single_last(osc_signal, 0, 0)
-        #     else:
-        #         #pid_output = self.data_collector.pid.get_PID_output_single_all(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-        #         pid_output = self.data_collector.pid.get_PID_output_single_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-        #     signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
-        # else:
-        #     osc_signal = self.data_collector.osc.get_osc_input(append=False)
-        #     demod_signal = self.data_collector.dither.demodulate(osc_signal)
-        #     filter_signal = self.data_collector.filter.apply(demod_signal)
-        #     # Single output considering all
-        #     if self.dither_checkbox.isChecked():
-        #         #pid_output = self.data_collector.pid.get_PID_output_single_all(osc_signal, 0, 0)
-        #         # Single output considering one
-        #         pid_output = self.data_collector.pid.get_PID_output_single_last(osc_signal, 0, 0)
-        #     else:
-        #         # pid_output = self.data_collector.pid.get_PID_output_single_all(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-        #         # Single output considering one
-        #         pid_output = self.data_collector.pid.get_PID_output_single_last(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith)
-        #     signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
-        # for n, window in enumerate(window_list):
-        #     window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
         
         if self.en_out_checkbox.isChecked():
             self.data_collector.pid.obj.auto_mode = True
@@ -190,4 +159,4 @@ class Ui_Plot_window(object):
     def reset_function(self):
         self.data_collector.osc.clear_collector()
         self.data_collector.pid.reset_pid()
-        self.pid_output_edit.setPlainText('Input buffer and PID buffer resetted.')
+        self.pid_output_edit.setPlainText('Input buffer and PID buffer reset.')

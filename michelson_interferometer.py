@@ -1,7 +1,7 @@
 
 import sys
 from PyQt5.uic import loadUi
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from monitor_screen import Ui_Plot_window
 from scipy import signal
@@ -165,68 +165,79 @@ class low_pass_filter_screen(QMainWindow):
             self.return_button.clicked.connect(self.return_function)
 
     def insert_function(self):
-        if not self.FIR_checkbox.isChecked() and not self.Butterworth_checkbox.isChecked() and not self.Chebyshev1_checkbox.isChecked() and not self.Elliptic_checkbox.isChecked():
-            self.error_label.setText('Please choose filter type.')
+        if data_collector.osc == None:
+            self.error_label.setText('Please start oscilloscpe first\nto determine sample frequency')
         else:
-            self.error_label.setText('')
-            num_coeff = self.num_coeff_line.text()
-            cutoff = self.cut_off_fre_line.text()
+            if not self.FIR_checkbox.isChecked() and not self.Butterworth_checkbox.isChecked() and not self.Chebyshev1_checkbox.isChecked() and not self.Elliptic_checkbox.isChecked():
+                self.error_label.setText('Please choose filter type.')
+            else:
+                self.error_label.setText('')
+                num_coeff = self.num_coeff_line.text()
+                cutoff = self.cut_off_fre_line.text()
 
-            if self.FIR_checkbox.isChecked() or self.Butterworth_checkbox.isChecked():
-                if self.FIR_checkbox.isChecked():
-                    filtertype = 'FIR'
-                else:
-                    filtertype = 'butter'
-                if len(num_coeff) == 0 or len(cutoff) == 0:
-                    self.error_label.setText('Please insert all fields.')
-                elif float(cutoff) > data_collector.osc.fs/2:
-                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
-                else:
-                    # Store data
-                    data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.fs)
-                    print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
-                    print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
-                    # Plot bode diagram
-                    b, a = data_collector.filter.get_coefficients()
-                    self.plot_bode(b, a)
+                if self.FIR_checkbox.isChecked() or self.Butterworth_checkbox.isChecked():
+                    if self.FIR_checkbox.isChecked():
+                        filtertype = 'FIR'
+                    else:
+                        filtertype = 'butter'
+                    if len(num_coeff) == 0 or len(cutoff) == 0:
+                        self.error_label.setText('Please insert all fields.')
+                    elif filtertype == 'FIR' and int(num_coeff) > 2000:
+                        self.error_label.setText('Please reduce filter order.')
+                    elif filtertype == 'butter' and int(num_coeff) > 60:
+                        self.error_label.setText('Please reduce filter order.')
+                    elif float(cutoff) > data_collector.osc.fs/2:
+                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                    else:
+                        # Store data
+                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.fs)
+                        print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
+                        print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
+                        # Plot bode diagram
+                        b, a = data_collector.filter.get_coefficients()
+                        self.plot_bode(b, a)
 
-            if self.Chebyshev1_checkbox.isChecked():
-                filtertype = 'cheby1'
-                max_ripple = self.max_ripple_line.text()
-                if len(num_coeff) == 0 or len(cutoff) == 0 or len(max_ripple) == 0:
-                    self.error_label.setText('Please insert all fields.')
-                elif float(cutoff) > data_collector.osc.fs/2:
-                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
-                else:
-                    # Store data
-                    data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, max_ripple=float(max_ripple))
-                    print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
-                    print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
-                    print('Max. ripple: ' + str(data_collector.filter.max_ripple))
-                    # Plot bode diagram
-                    b, a = data_collector.filter.get_coefficients()
-                    self.plot_bode(b, a)
-            
-            if self.Elliptic_checkbox.isChecked():
-                filtertype = 'elliptic'
-                max_ripple = self.max_ripple_line.text()
-                min_attenuation = self.min_attenuation_line.text()
-                if len(num_coeff) == 0 or len(cutoff) == 0 or len(max_ripple) == 0 or len(min_attenuation) == 0:
-                    self.error_label.setText('Please insert all fields.')
-                elif float(cutoff) > data_collector.osc.fs/2:
-                    self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
-                elif float(max_ripple) > float(min_attenuation):
-                    self.error_label.setText('Max. ripple must be lower than\n min. attenuation.')
-                else:
-                    # Cast to int and float and store data
-                    data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, max_ripple=float(max_ripple), min_attenuation=float(min_attenuation))
-                    print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
-                    print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
-                    print('Max. ripple: ' + str(data_collector.filter.max_ripple))
-                    print('Min. attenuation: ' + str(data_collector.filter.min_attenuation))
-                    # Plot bode diagram
-                    b, a = data_collector.filter.get_coefficients()
-                    self.plot_bode(b, a)
+                if self.Chebyshev1_checkbox.isChecked():
+                    filtertype = 'cheby1'
+                    max_ripple = self.max_ripple_line.text()
+                    if len(num_coeff) == 0 or len(cutoff) == 0 or len(max_ripple) == 0:
+                        self.error_label.setText('Please insert all fields.')
+                    elif int(num_coeff) > 60:
+                        self.error_label.setText('Please reduce filter order.')
+                    elif float(cutoff) > data_collector.osc.fs/2:
+                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                    else:
+                        # Store data
+                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, max_ripple=float(max_ripple))
+                        print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
+                        print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
+                        print('Max. ripple: ' + str(data_collector.filter.max_ripple))
+                        # Plot bode diagram
+                        b, a = data_collector.filter.get_coefficients()
+                        self.plot_bode(b, a)
+                
+                if self.Elliptic_checkbox.isChecked():
+                    filtertype = 'elliptic'
+                    max_ripple = self.max_ripple_line.text()
+                    min_attenuation = self.min_attenuation_line.text()
+                    if len(num_coeff) == 0 or len(cutoff) == 0 or len(max_ripple) == 0 or len(min_attenuation) == 0:
+                        self.error_label.setText('Please insert all fields.')
+                    elif int(num_coeff) > 60:
+                        self.error_label.setText('Please reduce filter order.')
+                    elif float(cutoff) > data_collector.osc.fs/2:
+                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                    elif float(max_ripple) > float(min_attenuation):
+                        self.error_label.setText('Max. ripple must be lower than\n min. attenuation.')
+                    else:
+                        # Cast to int and float and store data
+                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.fs, max_ripple=float(max_ripple), min_attenuation=float(min_attenuation))
+                        print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
+                        print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
+                        print('Max. ripple: ' + str(data_collector.filter.max_ripple))
+                        print('Min. attenuation: ' + str(data_collector.filter.min_attenuation))
+                        # Plot bode diagram
+                        b, a = data_collector.filter.get_coefficients()
+                        self.plot_bode(b, a)
 
     def plot_bode(self, b, a):
         fs = data_collector.osc.fs
