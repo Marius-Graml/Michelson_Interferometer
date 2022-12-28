@@ -4,11 +4,12 @@ import numpy as np
 import pandas as pd
 
 class pid_controller():
-    def __init__(self, Kp, Ki, Kd, setpoint, amp_dith):
+    def __init__(self, Kp, Ki, Kd, setpoint, dith_freq, amp_dith):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
         self.setpoint = setpoint
+        self.dith_freq = dith_freq
         self.amp_dith = amp_dith
         self.obj = PID(self.Kp, self.Ki, self.Kd, self.setpoint, output_limits=(-3+self.amp_dith,3-self.amp_dith))
 
@@ -28,7 +29,8 @@ class pid_controller():
     #     output = pd.DataFrame(output, columns=['time', 'ch'])
     #     return output
 
-    def get_PID_output_single(self, input_signal, dith_freq, amp_dith, single=True):
+    def get_PID_output_single(self, input_signal, single=True, dither=True):
+        self.obj.output_limits = (-3,3)
         data = np.array(input_signal['ch'])
         t = np.reshape(np.array(input_signal['time']), (-1,1))
         if single:
@@ -41,7 +43,9 @@ class pid_controller():
             print(np.size(data[-1024:]))
         output_data = output_sample * np.ones((np.shape(data)[0], 1))
         # Add dither signal
-        output_data = output_data + amp_dith * np.sin(2*np.pi*dith_freq * t)
+        if dither:
+            self.obj.output_limits = (-3+self.amp_dith,3-self.amp_dith)
+            output_data = output_data + 15*self.amp_dith * np.sin(2*np.pi*self.dith_freq * t)
         # Generate output 
         output_data = np.concatenate((t, output_data), axis=1)
         output_data = pd.DataFrame(output_data, columns=['time', 'ch'])

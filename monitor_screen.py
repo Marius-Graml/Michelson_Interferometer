@@ -3,6 +3,8 @@ from PyQt5 import QtCore, QtWidgets
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
 from MDT_COMMAND_LIB import *
+import numpy as np
+import pandas as pd
 
 class Ui_Plot_window(object):
     def __init__(self, data_collector):
@@ -134,14 +136,8 @@ class Ui_Plot_window(object):
             osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=False, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
-        if self.dither_checkbox.isChecked():
-            # Dither signal is not applied
-            self.data_collector.pid.obj.output_limits = (-3,3)
-            cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(osc_signal, 0, 0, single=self.consider_checkbox.isChecked())[1]
-        else:
-            # Dither signal is applied
-            self.data_collector.pid.obj.output_limits = (-3+self.data_collector.dither.amp_dith,3-self.data_collector.dither.amp_dith)
-            cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith, single=self.consider_checkbox.isChecked())
+
+        cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, single=self.consider_checkbox.isChecked(), dither=not self.dither_checkbox.isChecked())
         signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
 
         for n, window in enumerate(window_list):
@@ -153,14 +149,19 @@ class Ui_Plot_window(object):
         print(cont_sample)
         mdtSetAllVoltage(hdl=self.hdl, voltage=cont_sample)
 
-        # if self.en_out_checkbox.isChecked():
-        #     self.data_collector.pid.obj.auto_mode = True
-        #     self.data_collector.awg.output(enable=True)
-        #     self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch'][0]))
-        #     self.data_collector.awg.generate(pid_output['ch'], output_freq=self.data_collector.dither.dith_freq)
-        # else:
-        #     self.data_collector.pid.obj.auto_mode = False
-        #     self.data_collector.awg.output(enable=False)
+        if self.en_out_checkbox.isChecked():
+            if self.dither_checkbox.isChecked():
+                self.data_collector.dither.generate()
+            else:
+                self.data_collector.dither.obj.generate_waveform(channel=1, type='DC', dc_level=0)
+            self.data_collector.pid.obj.auto_mode = True
+            #self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch'][0]))
+            print(cont_sample)
+            mdtSetAllVoltage(hdl=self.hdl, voltage=cont_sample)
+        else:
+            self.data_collector.pid.obj.auto_mode = False
+            mdtSetAllVoltage(hdl=self.hdl, voltage=0)
+            self.data_collector.dither.obj.generate_waveform(channel=1, type='DC', dc_level=0)
 
 
 

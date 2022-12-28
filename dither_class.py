@@ -12,7 +12,7 @@ class dither():
         self.obj = WaveformGenerator(ip_address, force_connect=True)
 
     def generate(self):
-        self.obj.generate_waveform(channel=1, type='Sine', amplitude=0.5*self.amp_dith, frequency=self.dith_freq, offset=0, phase=self.theta)
+        self.obj.generate_waveform(channel=1, type='Sine', amplitude=2*self.amp_dith, frequency=self.dith_freq, offset=0, phase=self.theta)
 
     def demodulate(self, input_signal_df):
         t = np.array(input_signal_df['time'])

@@ -130,8 +130,8 @@ class dither_screen(QMainWindow):
     def insert_function(self):
         ip_address = self.ip_ch_line.text()
         output_ch = self.out_ch_line.text()
-        dith_freq = dith_freq = self.dith_freq_line.text()
-        theta = theta = self.phase_diff_line.text()
+        dith_freq = self.dith_freq_line.text()
+        theta = self.phase_diff_line.text()
         amp_dith = self.amp_dith_line.text()
 
         if len(ip_address) == 0 or len(output_ch) == 0 or len(dith_freq) == 0 or len(theta) == 0 or len(amp_dith) == 0:
@@ -276,7 +276,7 @@ class pid_controller_screen(QMainWindow):
 
         else:
             # Store data
-            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd), setpoint=float(setpoint), amp_dith=data_collector.dither.amp_dith)
+            data_collector.pid = pid_controller(Kp=float(Kp), Ki=float(Ki), Kd=float(Kd), setpoint=float(setpoint), dith_freq=data_collector.dither.dith_freq, amp_dith=data_collector.dither.amp_dith)
             print('P-factor: ' + str(data_collector.pid.Kp))
             print('I-factor: ' + str(data_collector.pid.Ki))
             print('D-factor: ' + str(data_collector.pid.Kd))
