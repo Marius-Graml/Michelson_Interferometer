@@ -5,17 +5,16 @@ import numpy as np
 from scipy import signal
 
 class osc():
-    def __init__(self, ip_address, timebase, input_ch, output_ch):
+    def __init__(self, ip_address, timebase, input_ch):
         self.ip_address = ip_address
         self.timebase = timebase
         self.input_ch = input_ch
-        self.output_ch = output_ch
         #8928571.42857143 # in Hz
         self.obj = Oscilloscope(self.ip_address, force_connect = True)
-        t = self.obj.get_data()['time']
-        self.fs = 1/(t[1] - t[0])
+        #t = self.obj.get_data()['time']
+        #self.fs = 1/(t[1] - t[0])
         self.osc_input_collector = []
-        self.signal = None
+        self.osc_time_collector = []
         self.c = 0
 
     def config(self):
@@ -23,35 +22,49 @@ class osc():
         self.obj.set_trigger(mode='Auto', level=0, source='Input1')
         # Set timebase
         self.obj.set_timebase(self.timebase[0], self.timebase[1])
-        # Generate an output ramp wave on Channel 1, 1Vpp, 10000Hz, 0V offset
-        # osc.generate_waveform(channel=1, type='Ramp', amplitude=1, frequency=10000, duty=0.9, symmetry=0.5, edge_time=0.5)
-        # self.obj.generate_waveform(channel=2, type='Sine', amplitude=2.5, frequency=self.dith_freq, phase=self.theta, offset=2.5)
-        # Generate dither signal for on channel 2 and measure input signal on channel 1
-        # self.obj.set_source(self.output_ch, 'Output1') # loop back output
+        # Set acquisition mode 
+        self.obj.set_acquisition_mode(mode="Precision")
+        # Set source
         self.obj.set_source(self.input_ch, 'Input1')
-        self.obj.set_interpolation(interpolation='Gaussian')
+        # Enable rollmode
+        self.obj.enable_rollmode(roll=False)
 
     def get_osc_input(self, append, dith_freq, filtered):
-        output = self.get_one_ch_data() 
+        output = self.get_one_ch_data()
         data = output['ch'].values.tolist()
         for item in data:
             self.osc_input_collector.append(item)
-        if len(self.osc_input_collector) <= 30720:
-            osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
-            n_axis = np.arange(len(self.osc_input_collector))
-            t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
-        elif len(self.osc_input_collector) > 30720:
+    # if len(self.osc_input_collector) <= 30720:
+        if len(self.osc_input_collector) > 30720:
             del self.osc_input_collector[0:1024]
-            osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
-            self.c = self.c+1
-            n_start = self.c*1024
-            n_axis = np.arange(n_start, n_start+30720)
-            t_axis = np.reshape(n_axis/self.fs, (-1,1)) # in s
+            del self.osc_time_collector[0:1024]
+        osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
+        self.c = self.c+1
+        n_start = self.c*1024
+        n_axis_new = np.arange(n_start, n_start+1024)
+        print(np.shape(n_axis_new))
+        #n_axis = np.arange(len(self.osc_input_collector))
+        print(self.obj.get_samplerate()['sample_rate'])
+        t_axis_new = np.reshape(n_axis_new/self.obj.get_samplerate()['sample_rate'], (-1,1)) # in s
+        print(np.shape(t_axis_new))
+        for item in t_axis_new:
+            self.osc_time_collector.append(item)
+        print(len(self.osc_time_collector))
+        t_axis = np.reshape(np.array(self.osc_time_collector), (-1,1))
+        print(np.shape(t_axis))
+        #t_axis = np.reshape(n_axis/self.obj.get_samplerate()['sample_rate'], (-1,1)) # in s
+        # osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
+        # self.c = self.c+1
+        # n_start = self.c*1024
+        # n_axis = np.arange(n_start, n_start+30720)
+        # t_axis = np.reshape(n_axis/self.obj.get_samplerate()['sample_rate'], (-1,1)) # in s
         print(len(self.osc_input_collector))
+        print(np.shape(t_axis))
+        print(np.shape(osc_input))
         osc_input = np.concatenate((t_axis, osc_input), axis=1)
         output = pd.DataFrame(osc_input, columns=['time', 'ch'])
         if filtered:
-            myfilter = signal.firwin(1000, dith_freq*2, fs=self.fs)
+            myfilter = signal.firwin(1000, dith_freq*2, fs=self.obj.get_samplerate()['sample_rate'])
             output['ch'] = signal.lfilter(myfilter, [1.0], output['ch'])
         # Get mean of input
         sig_mean = np.mean(output['ch'][-1024:]) * np.ones((1024, 1))
@@ -65,7 +78,7 @@ class osc():
             return output, sig_mean
 
     def get_one_ch_data(self):
-        data = self.obj.get_data(timeout=0.1)
+        data = self.obj.get_data()
         self.fs = 1/(data['time'][1] - data['time'][0])
         if self.input_ch:
             signal_df = pd.DataFrame(data).iloc[:,[0,1]]
@@ -78,6 +91,7 @@ class osc():
 
     def clear_collector(self):
         self.osc_input_collector.clear()
+        self.osc_time_collector.clear()
 
     def stop(self):
         self.obj.disable_input(channel=self.input_ch)

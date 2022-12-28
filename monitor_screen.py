@@ -2,6 +2,7 @@
 from PyQt5 import QtCore, QtWidgets
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
+from MDT_COMMAND_LIB import *
 
 class Ui_Plot_window(object):
     def __init__(self, data_collector):
@@ -90,6 +91,13 @@ class Ui_Plot_window(object):
         self.timer.timeout.connect(self.check_stop_function)
         self.timer.start()
 
+        # Initialize PZT-Controller
+        devs = mdtListDevices()
+        self.hdl = mdtOpen(devs[0][0], nBaud=115200, timeout=1)
+
+        # Start Waveform-Generator
+        self.data_collector.dither.generate()
+
     def retranslateUi(self, Plot_window):
         _translate = QtCore.QCoreApplication.translate
         Plot_window.setWindowTitle(_translate("Plot_window", "MainWindow"))
@@ -117,33 +125,44 @@ class Ui_Plot_window(object):
         # Plot new data
         color_list = [pg.mkPen(color=(255, 0, 0)), pg.mkPen(color=(0, 255, 0)), pg.mkPen(color=(0, 0, 255)), pg.mkPen(color=(100, 100, 100))]
         if self.append_checkbox.isChecked():
+            # Appending
             osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=True, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
         else:
+            # No appending
             osc_signal, sig_mean = self.data_collector.osc.get_osc_input(append=False, dith_freq=self.data_collector.dither.dith_freq, filtered=self.in_filter_checkbox.isChecked())
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
         if self.dither_checkbox.isChecked():
-            self.data_collector.pid.obj.output_limits = (-5,5)
-            pid_output = self.data_collector.pid.get_PID_output_single(osc_signal, 0, 0, single=self.consider_checkbox.isChecked())
+            # Dither signal is not applied
+            self.data_collector.pid.obj.output_limits = (-3,3)
+            cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(osc_signal, 0, 0, single=self.consider_checkbox.isChecked())[1]
         else:
-            self.data_collector.pid.obj.output_limits = (-5+self.data_collector.dither.amp_dith,5-self.data_collector.dither.amp_dith)
-            pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith, single=self.consider_checkbox.isChecked())
+            # Dither signal is applied
+            self.data_collector.pid.obj.output_limits = (-3+self.data_collector.dither.amp_dith,3-self.data_collector.dither.amp_dith)
+            cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, self.data_collector.dither.dith_freq, self.data_collector.dither.amp_dith, single=self.consider_checkbox.isChecked())
         signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
 
         for n, window in enumerate(window_list):
+            print(n)
+            print(window)
             window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
         window_list[0].plot(sig_mean['time'], sig_mean['ch'], pen=pg.mkPen(color=(0, 102, 0)))
         
-        if self.en_out_checkbox.isChecked():
-            self.data_collector.pid.obj.auto_mode = True
-            self.data_collector.awg.output(enable=True)
-            self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch'][0]))
-            self.data_collector.awg.generate(pid_output['ch'], output_freq=self.data_collector.dither.dith_freq)
-        else:
-            self.data_collector.pid.obj.auto_mode = False
-            self.data_collector.awg.output(enable=False)
+        print(cont_sample)
+        mdtSetAllVoltage(hdl=self.hdl, voltage=cont_sample)
+
+        # if self.en_out_checkbox.isChecked():
+        #     self.data_collector.pid.obj.auto_mode = True
+        #     self.data_collector.awg.output(enable=True)
+        #     self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch'][0]))
+        #     self.data_collector.awg.generate(pid_output['ch'], output_freq=self.data_collector.dither.dith_freq)
+        # else:
+        #     self.data_collector.pid.obj.auto_mode = False
+        #     self.data_collector.awg.output(enable=False)
+
+
 
 
     def start_stop_function(self):

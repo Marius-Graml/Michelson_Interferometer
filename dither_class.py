@@ -1,13 +1,18 @@
 
 import numpy as np
 import pandas as pd
+from moku.instruments import WaveformGenerator
 
 class dither():
-    def __init__(self, dith_freq, theta, amp_dith):
+    def __init__(self, ip_address, output_ch, dith_freq, theta, amp_dith):
+        self.output_ch = output_ch
         self.dith_freq = dith_freq
         self.theta = theta
         self.amp_dith = amp_dith
-        self.signal = None
+        self.obj = WaveformGenerator(ip_address, force_connect=True)
+
+    def generate(self):
+        self.obj.generate_waveform(channel=1, type='Sine', amplitude=0.5*self.amp_dith, frequency=self.dith_freq, offset=0, phase=self.theta)
 
     def demodulate(self, input_signal_df):
         t = np.array(input_signal_df['time'])

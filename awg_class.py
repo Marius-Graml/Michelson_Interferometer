@@ -13,7 +13,7 @@ class awg():
             output_freq = 100
         gen_signal_df = 1/10 * gen_signal_df
         gen_signal_list = gen_signal_df.values.tolist()
-        self.obj.generate_waveform(channel=1, sample_rate='Auto',lut_data=gen_signal_list, frequency=output_freq, amplitude=10)
+        self.obj.generate_waveform(channel=1, sample_rate='15.625Ms', lut_data=gen_signal_list, frequency=output_freq, amplitude=10, strict=False)
 
     def output(self, enable):
         self.obj.enable_output(channel=self.output_ch, enable=enable)

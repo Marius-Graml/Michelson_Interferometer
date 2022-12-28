@@ -69,8 +69,8 @@ class osc_screen(QMainWindow):
     def __init__(self):
         super(osc_screen, self).__init__()
         loadUi('osc_screen.ui', self)
+        self.ip_ch_line.setText('[fe80:0000:0000:0000:7269:79ff:feb9:0c22%12]')
         self.in_ch_line.setText('1')
-        self.out_ch_line.setText('1')
         self.timebase_line.setText('0 5e-3')
         self.status_label.setText('')
         self.status_label.setStyleSheet('color: red;')
@@ -79,17 +79,16 @@ class osc_screen(QMainWindow):
 
     def run_function(self):
         self.status_label.setText('')
+        ip_address = self.ip_ch_line.text()
         input_ch = self.in_ch_line.text()
-        output_ch = self.out_ch_line.text()
         timebase = self.timebase_line.text()
 
         # Error consideration
-        if len(input_ch) == 0 or len(output_ch) == 0 or len(timebase) == 0:
+        if len(ip_address) == 0 or len(input_ch) == 0 or len(timebase) == 0:
             self.status_label.setText('Please insert all fields first.')
         else:
             # Cast string to int and float
             input_ch = int(input_ch)
-            output_ch = int(output_ch)
             timebase = [float(x) for x in timebase.split()]
 
             if timebase[0] < 0 or timebase[1] < 0:
@@ -97,8 +96,8 @@ class osc_screen(QMainWindow):
             elif timebase[0] > timebase[1]:
                 self.status_label.setText('Starting time value must be higher than end value.')
             else:
+                print('IP address: ' + str(ip_address))
                 print('Selected input channel: ' + str(input_ch))
-                print('Selected output channel: ' + str(output_ch))
                 print('Timebase: ' + str(timebase))
 
                 # Config oscilloscope
@@ -106,9 +105,9 @@ class osc_screen(QMainWindow):
                 self.status_label.setText('')
                 self.status_label.setText('Starting oscilloscope...')
                 print('Starting oscilloscope...')
-                data_collector.osc = osc(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0c22%12]', timebase=timebase, input_ch=input_ch, output_ch=output_ch)
+                data_collector.osc = osc(ip_address=ip_address, timebase=timebase, input_ch=input_ch)
                 data_collector.osc.config()
-                data_collector.awg = awg(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0b52%7]', output_ch=output_ch)
+                #data_collector.awg = awg(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0b52%7]', output_ch=output_ch)
                 print('Oscilloscope is running.')
                 self.status_label.setText('Oscilloscope is running.')
 
@@ -121,27 +120,32 @@ class dither_screen(QMainWindow):
     def __init__(self):
         super(dither_screen, self).__init__()
         loadUi('dither_screen.ui', self)
+        self.ip_ch_line.setText('[fe80:0000:0000:0000:7269:79ff:feb9:0b52%7]')
+        self.out_ch_line.setText('1')
         self.status_label.setText('')
         self.status_label.setStyleSheet('color: red;')
         self.insert_button.clicked.connect(self.insert_function)
         self.return_button.clicked.connect(self.return_function)
 
     def insert_function(self):
+        ip_address = self.ip_ch_line.text()
+        output_ch = self.out_ch_line.text()
         dith_freq = dith_freq = self.dith_freq_line.text()
         theta = theta = self.phase_diff_line.text()
         amp_dith = self.amp_dith_line.text()
 
-        if len(dith_freq) == 0 or len(theta) == 0 or len(amp_dith) == 0:
+        if len(ip_address) == 0 or len(output_ch) == 0 or len(dith_freq) == 0 or len(theta) == 0 or len(amp_dith) == 0:
             self.status_label.setText('Please insert all fields first.')
         else:
-            data_collector.dither = dither(float(dith_freq), float(theta), float(amp_dith))
+            data_collector.dither = dither(ip_address=ip_address, output_ch = int(output_ch), dith_freq=float(dith_freq), theta=float(theta), amp_dith=float(amp_dith))
+            data_collector.dither.generate()
+            self.status_label.setStyleSheet('color: green;')
+            self.status_label.setText('Waveform-Generator is running.')
+            print('IP address: ' + str(ip_address))
+            print('Selected output channel: ' + str(output_ch))
             print('Dither frequency: ' + str(dith_freq))
             print('Phase difference: ' + str(theta))
             print('Amplitude dither signal: ' + str(amp_dith))
-
-            ui = main_screen()
-            widget.addWidget(ui)
-            widget.setCurrentIndex(widget.currentIndex()-2)
 
     def return_function(self):
         ui = main_screen()
@@ -186,11 +190,11 @@ class low_pass_filter_screen(QMainWindow):
                         self.error_label.setText('Please reduce filter order.')
                     elif filtertype == 'butter' and int(num_coeff) > 60:
                         self.error_label.setText('Please reduce filter order.')
-                    elif float(cutoff) > data_collector.osc.fs/2:
-                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                    elif float(cutoff) > data_collector.osc.obj.get_samplerate()['sample_rate']/2:
+                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.obj.get_samplerate()['sample_rate']/2)/1e6) + ' MHz')
                     else:
                         # Store data
-                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.fs)
+                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.obj.get_samplerate()['sample_rate'])
                         print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
                         print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
                         # Plot bode diagram
@@ -204,11 +208,11 @@ class low_pass_filter_screen(QMainWindow):
                         self.error_label.setText('Please insert all fields.')
                     elif int(num_coeff) > 60:
                         self.error_label.setText('Please reduce filter order.')
-                    elif float(cutoff) > data_collector.osc.fs/2:
-                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                    elif float(cutoff) > data_collector.osc.obj.get_samplerate()['sample_rate']/2:
+                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.obj.get_samplerate()['sample_rate']/2)/1e6) + ' MHz')
                     else:
                         # Store data
-                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, max_ripple=float(max_ripple))
+                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.obj.get_samplerate()['sample_rate'], max_ripple=float(max_ripple))
                         print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
                         print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
                         print('Max. ripple: ' + str(data_collector.filter.max_ripple))
@@ -224,13 +228,13 @@ class low_pass_filter_screen(QMainWindow):
                         self.error_label.setText('Please insert all fields.')
                     elif int(num_coeff) > 60:
                         self.error_label.setText('Please reduce filter order.')
-                    elif float(cutoff) > data_collector.osc.fs/2:
-                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.fs/2)/1e6) + ' MHz')
+                    elif float(cutoff) > data_collector.osc.obj.get_samplerate()['sample_rate']/2:
+                        self.error_label.setText('Cut-off frequency must be lower than \n' + str(int(data_collector.osc.obj.get_samplerate()['sample_rate']/2)/1e6) + ' MHz')
                     elif float(max_ripple) > float(min_attenuation):
                         self.error_label.setText('Max. ripple must be lower than\n min. attenuation.')
                     else:
                         # Cast to int and float and store data
-                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.fs, max_ripple=float(max_ripple), min_attenuation=float(min_attenuation))
+                        data_collector.filter = low_pass_filter(num_coeff=int(num_coeff), cutoff=float(cutoff), filtertype=filtertype, fs=data_collector.osc.obj.get_samplerate()['sample_rate'], max_ripple=float(max_ripple), min_attenuation=float(min_attenuation))
                         print('Number of filter coefficients: ' + str(data_collector.filter.num_coeff))
                         print('Cut-off frequency: ' + str(data_collector.filter.cutoff))
                         print('Max. ripple: ' + str(data_collector.filter.max_ripple))
@@ -240,7 +244,7 @@ class low_pass_filter_screen(QMainWindow):
                         self.plot_bode(b, a)
 
     def plot_bode(self, b, a):
-        fs = data_collector.osc.fs
+        fs = data_collector.osc.obj.get_samplerate()['sample_rate']
         w, h = signal.freqz(b,a)
         f = w/np.pi*fs/2
         pen=pg.mkPen(color=(148, 0, 211), width=2)

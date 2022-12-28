@@ -43,14 +43,14 @@ background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius:0.5, fx:0.5
 color: rgb(0, 0, 0);</string>
      </property>
      <property name="text">
-      <string>Moku:Go Setup</string>
+      <string>Oscilloscope Setup</string>
      </property>
     </widget>
     <widget class="QPushButton" name="run_button">
      <property name="geometry">
       <rect>
        <x>250</x>
-       <y>360</y>
+       <y>370</y>
        <width>131</width>
        <height>23</height>
       </rect>
@@ -59,14 +59,14 @@ color: rgb(0, 0, 0);</string>
       <string notr="true"/>
      </property>
      <property name="text">
-      <string>Run Moku:Go's</string>
+      <string>Run Oscilloscope</string>
      </property>
     </widget>
     <widget class="QPushButton" name="return_button">
      <property name="geometry">
       <rect>
        <x>250</x>
-       <y>390</y>
+       <y>400</y>
        <width>131</width>
        <height>23</height>
       </rect>
@@ -79,7 +79,7 @@ color: rgb(0, 0, 0);</string>
      <property name="geometry">
       <rect>
        <x>250</x>
-       <y>330</y>
+       <y>340</y>
        <width>331</width>
        <height>21</height>
       </rect>
@@ -96,14 +96,30 @@ color: rgb(0, 0, 0);</string>
       <rect>
        <x>250</x>
        <y>110</y>
-       <width>211</width>
-       <height>201</height>
+       <width>381</width>
+       <height>191</height>
       </rect>
      </property>
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
      <widget class="QLabel" name="label_2">
+      <property name="styleSheet">
+       <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
+      </property>
+      <property name="text">
+       <string>IP Address</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="ip_ch_line">
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_4">
       <property name="styleSheet">
        <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
       </property>
@@ -119,28 +135,12 @@ color: rgb(0, 0, 0);</string>
        <string/>
       </property>
      </widget>
-     <widget class="QLabel" name="label_4">
-      <property name="styleSheet">
-       <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
-      </property>
-      <property name="text">
-       <string>Output channel</string>
-      </property>
-     </widget>
-     <widget class="QLineEdit" name="out_ch_line">
-      <property name="styleSheet">
-       <string notr="true">background-color: rgb(255, 255, 255);</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
      <widget class="QLabel" name="label_3">
       <property name="styleSheet">
        <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
       </property>
       <property name="text">
-       <string>Timebase</string>
+       <string>Timebase [s]</string>
       </property>
      </widget>
      <widget class="QLineEdit" name="timebase_line">
