@@ -40,7 +40,7 @@ class Ui_MainWindow(object):
         self.append_checkbox.setChecked(True)
 
         # Config OSC
-        self.my_osc = osc(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0c22%12]', timebase = [-1, 1], input_ch = 1, output_ch=1)
+        self.my_osc = osc(ip_address='[fe80:0000:0000:0000:7269:79ff:feb9:0c22%12]', timebase = [0,91*10**-6], input_ch = 1)
 
         # Initialize timer
         self.timer = QtCore.QTimer()

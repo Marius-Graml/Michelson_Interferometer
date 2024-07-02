@@ -66,11 +66,6 @@
       <string>Appending</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="en_out_checkbox">
-     <property name="text">
-      <string>Generate output</string>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="in_filter_checkbox">
      <property name="text">
       <string>Input filter</string>
@@ -95,16 +90,6 @@
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
     </property>
-    <widget class="QCheckBox" name="dither_checkbox">
-     <property name="text">
-      <string>Ignore dither signal</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="consider_checkbox">
-     <property name="text">
-      <string>Consider single sample</string>
-     </property>
-    </widget>
    </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

@@ -28,9 +28,12 @@ class osc():
         self.obj.set_source(self.input_ch, 'Input1')
         # Enable rollmode
         self.obj.enable_rollmode(roll=False)
+        # set Interpolation
+        self.obj.set_interpolation(interpolation='Linear')
 
     def get_osc_input(self, append, dith_freq, filtered):
         output = self.get_one_ch_data()
+        print("Output" + str(len(output)))
         data = output['ch'].values.tolist()
         for item in data:
             self.osc_input_collector.append(item)
@@ -52,6 +55,7 @@ class osc():
         print(len(self.osc_time_collector))
         t_axis = np.reshape(np.array(self.osc_time_collector), (-1,1))
         print(np.shape(t_axis))
+        print(self.obj.get_samplerate())
         #t_axis = np.reshape(n_axis/self.obj.get_samplerate()['sample_rate'], (-1,1)) # in s
         # osc_input = np.reshape(np.array(self.osc_input_collector), (-1,1))
         # self.c = self.c+1
@@ -92,6 +96,7 @@ class osc():
     def clear_collector(self):
         self.osc_input_collector.clear()
         self.osc_time_collector.clear()
+        self.c = 0
 
     def stop(self):
         self.obj.disable_input(channel=self.input_ch)

@@ -97,9 +97,6 @@ class Ui_Plot_window(object):
         devs = mdtListDevices()
         self.hdl = mdtOpen(devs[0][0], nBaud=115200, timeout=1)
 
-        # Start Waveform-Generator
-        self.data_collector.dither.generate()
-
     def retranslateUi(self, Plot_window):
         _translate = QtCore.QCoreApplication.translate
         Plot_window.setWindowTitle(_translate("Plot_window", "MainWindow"))
@@ -137,7 +134,7 @@ class Ui_Plot_window(object):
             demod_signal = self.data_collector.dither.demodulate(osc_signal)
             filter_signal = self.data_collector.filter.apply(demod_signal)
 
-        cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, single=self.consider_checkbox.isChecked(), dither=not self.dither_checkbox.isChecked())
+        cont_sample, pid_output = self.data_collector.pid.get_PID_output_single(filter_signal, single=self.consider_checkbox.isChecked())
         signal_list = [osc_signal, demod_signal, filter_signal, pid_output]
 
         for n, window in enumerate(window_list):
@@ -146,24 +143,9 @@ class Ui_Plot_window(object):
             window.plot(signal_list[n]['time'], signal_list[n]['ch'], pen=color_list[n]) # in s
         window_list[0].plot(sig_mean['time'], sig_mean['ch'], pen=pg.mkPen(color=(0, 102, 0)))
         
-        print(cont_sample)
-        mdtSetAllVoltage(hdl=self.hdl, voltage=cont_sample)
-
-        if self.en_out_checkbox.isChecked():
-            if self.dither_checkbox.isChecked():
-                self.data_collector.dither.generate()
-            else:
-                self.data_collector.dither.obj.generate_waveform(channel=1, type='DC', dc_level=0)
-            self.data_collector.pid.obj.auto_mode = True
-            #self.pid_output_edit.setPlainText('PID output: \n' + str(pid_output['ch'][0]))
-            print(cont_sample)
-            mdtSetAllVoltage(hdl=self.hdl, voltage=cont_sample)
-        else:
-            self.data_collector.pid.obj.auto_mode = False
-            mdtSetAllVoltage(hdl=self.hdl, voltage=0)
-            self.data_collector.dither.obj.generate_waveform(channel=1, type='DC', dc_level=0)
-
-
+        # Output constant
+        # print(cont_sample)
+        # mdtSetAllVoltage(hdl=self.hdl, voltage=cont_sample)
 
 
     def start_stop_function(self):
